@@ -20,6 +20,18 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // Routes
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'DataHub API Server is running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      plans: '/api/plans',
+      orders: '/api/orders'
+    }
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
