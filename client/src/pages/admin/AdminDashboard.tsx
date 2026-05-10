@@ -355,7 +355,7 @@ const AdminDashboard = () => {
       <aside className="w-full md:w-64 flex flex-col gap-2 shrink-0">
         <div className="hidden md:block bg-navy text-white rounded-2xl p-5 mb-4">
           <p className="text-xs font-bold opacity-60 uppercase tracking-widest mb-1">Admin Portal</p>
-          <p className="font-black text-lg">DAIK</p>
+          <p className="font-black text-lg">DAiK</p>
         </div>
         <div className="flex md:flex-col overflow-x-auto gap-2 pb-2 md:pb-0 scrollbar-hide">
           {navItems.map(({ id, label, icon: Icon }) => (

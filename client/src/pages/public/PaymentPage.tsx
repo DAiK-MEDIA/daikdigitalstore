@@ -160,7 +160,7 @@ const PaymentPage = () => {
                   <div className="text-sm">
                     <p className="text-on-surface-variant">Send <span className="font-bold text-navy">GHS {order.amount_paid}</span> to:</p>
                     <p className="text-lg font-black text-navy">{settings?.momo_number}</p>
-                    <p className="text-xs font-bold opacity-60 uppercase">Merchant: DAIK</p>
+                    <p className="text-xs font-bold opacity-60 uppercase">Merchant: DAiK</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
