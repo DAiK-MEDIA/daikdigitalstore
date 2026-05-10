@@ -31,7 +31,7 @@ const PaymentPage = () => {
         .eq('id', orderId)
         .single();
       setOrder(data);
-      
+
       const { data: s } = await (await import('../../services/supabase')).supabase
         .from('admin_settings')
         .select('*');
@@ -95,7 +95,7 @@ const PaymentPage = () => {
 
       <div className="space-y-4">
         {/* Pay Online Option */}
-        <button 
+        <button
           onClick={() => setMethod('paystack')}
           className={cn(
             "w-full text-left p-6 rounded-xl border-2 transition-all flex items-center justify-between group",
@@ -118,7 +118,7 @@ const PaymentPage = () => {
         </button>
 
         {/* Manual MoMo Option */}
-        <button 
+        <button
           onClick={() => setMethod('momo')}
           className={cn(
             "w-full text-left p-6 rounded-xl border-2 transition-all flex items-center justify-between group",
@@ -143,7 +143,7 @@ const PaymentPage = () => {
 
       <AnimatePresence mode="wait">
         {method === 'momo' ? (
-          <motion.div 
+          <motion.div
             key="momo-inst"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -179,8 +179,8 @@ const PaymentPage = () => {
               </div>
             </Card>
 
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="w-full py-4"
               onClick={handleWhatsApp}
             >
@@ -189,13 +189,13 @@ const PaymentPage = () => {
             </Button>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             key="paystack-btn"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Button 
-              className="w-full py-4 text-lg" 
+            <Button
+              className="w-full py-4 text-lg"
               onClick={handlePaystack}
               isLoading={isLoading}
             >
