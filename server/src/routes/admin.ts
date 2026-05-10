@@ -4,6 +4,7 @@ import {
   updateOrderStatus, 
   updateOrderNotification, 
   createManualOrder,
+  deleteOrder,
   managePlans,
   getSettings,
   updateSettings
@@ -20,6 +21,7 @@ router.get('/orders', getAllOrders);
 router.patch('/orders/:id/status', updateOrderStatus);
 router.patch('/orders/:id/notification', updateOrderNotification);
 router.post('/orders/manual', createManualOrder);
+router.delete('/orders/:id', deleteOrder);
 
 // Plans
 router.post('/plans', managePlans.create);

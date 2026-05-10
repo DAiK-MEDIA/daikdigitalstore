@@ -84,6 +84,21 @@ export const createManualOrder = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ message: 'Order deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+};
+
 // --- Plans ---
 
 export const managePlans = {
@@ -124,13 +139,13 @@ export const getSettings = async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase.from('admin_settings').select('*');
     if (error) throw error;
-    
+
     // Format as object
     const settings = data.reduce((acc: any, curr) => {
       acc[curr.key] = curr.value;
       return acc;
     }, {});
-    
+
     res.json(settings);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch settings' });

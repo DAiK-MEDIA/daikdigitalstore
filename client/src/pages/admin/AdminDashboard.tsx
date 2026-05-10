@@ -91,7 +91,8 @@ const AdminDashboard = () => {
 
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [toast, setToast] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // holds plan id to delete
+  const [confirmDeletePlan, setConfirmDeletePlan] = useState<string | null>(null);
+  const [confirmDeleteOrder, setConfirmDeleteOrder] = useState<string | null>(null);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -211,18 +212,33 @@ const AdminDashboard = () => {
   };
 
   const deletePlan = async (id: string) => {
-    setConfirmDelete(id);
+    setConfirmDeletePlan(id);
   };
 
-  const confirmDeletePlan = async () => {
-    if (!confirmDelete) return;
+  const confirmDeletePlanAction = async () => {
+    if (!confirmDeletePlan) return;
     try {
       const headers = await getAuthHeader();
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/admin/plans/${confirmDelete}`, { headers });
-      setPlans(prev => prev.filter(p => p.id !== confirmDelete));
-      setConfirmDelete(null);
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/admin/plans/${confirmDeletePlan}`, { headers });
+      setPlans(prev => prev.filter(p => p.id !== confirmDeletePlan));
+      setConfirmDeletePlan(null);
       showToast('Plan deleted.');
     } catch { showToast('Failed to delete plan'); }
+  };
+
+  const deleteOrder = async (id: string) => {
+    setConfirmDeleteOrder(id);
+  };
+
+  const confirmDeleteOrderAction = async () => {
+    if (!confirmDeleteOrder) return;
+    try {
+      const headers = await getAuthHeader();
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/admin/orders/${confirmDeleteOrder}`, { headers });
+      setOrders(prev => prev.filter(o => o.id !== confirmDeleteOrder));
+      setConfirmDeleteOrder(null);
+      showToast('Order deleted.');
+    } catch { showToast('Failed to delete order'); }
   };
 
   const togglePlan = async (plan: Plan) => {
@@ -271,12 +287,21 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {confirmDelete && (
+      {/* Plan Delete Confirmation Modal */}
+      {confirmDeletePlan && (
         <ConfirmModal
           message="This plan will be permanently removed. This action cannot be undone."
-          onConfirm={confirmDeletePlan}
-          onCancel={() => setConfirmDelete(null)}
+          onConfirm={confirmDeletePlanAction}
+          onCancel={() => setConfirmDeletePlan(null)}
+        />
+      )}
+
+      {/* Order Delete Confirmation Modal */}
+      {confirmDeleteOrder && (
+        <ConfirmModal
+          message="This order will be permanently removed from the records. This action cannot be undone."
+          onConfirm={confirmDeleteOrderAction}
+          onCancel={() => setConfirmDeleteOrder(null)}
         />
       )}
 
@@ -486,6 +511,13 @@ const AdminDashboard = () => {
                             )}
                           >
                             <MessageSquare className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => deleteOrder(order.id)}
+                            className="w-12 h-12 rounded-xl flex items-center justify-center bg-error/10 text-error hover:bg-error hover:text-white transition-all"
+                            title="Delete Order"
+                          >
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
