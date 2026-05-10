@@ -195,7 +195,7 @@ const LandingPage = () => {
 
                         <div className="flex items-center gap-2 text-on-surface-variant font-bold text-sm">
                           <div className="w-2 h-2 rounded-full bg-navy" />
-                          Valid for 30 Days
+                          Valid for 90 Days
                         </div>
 
                         <Button 
