@@ -15,7 +15,7 @@ const Navbar = () => {
             <Link to="/staff-hq/dashboard" className="flex items-center gap-3">
               <img src="/photo_2026-05-09_23-28-19.jpg" alt="Logo" className="w-10 h-10 rounded-lg object-cover border border-white/20" />
               <span className="font-hanken font-extrabold text-sm sm:text-lg tracking-tight leading-none max-w-[140px] sm:max-w-none">
-                DIAK DIGITAL STORE
+                DAIK DIGITAL STORE
               </span>
             </Link>
             <div className="flex items-center gap-3">
@@ -37,7 +37,7 @@ const Navbar = () => {
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2">
               <img src="/photo_2026-05-09_23-28-19.jpg" alt="Logo" className="w-10 h-10 rounded-lg object-cover" />
-              <span className="text-navy font-hanken font-extrabold text-base sm:text-xl tracking-tight leading-tight max-w-[120px] sm:max-w-none">DIAK DIGITAL STORE</span>
+              <span className="text-navy font-hanken font-extrabold text-base sm:text-xl tracking-tight leading-tight max-w-[120px] sm:max-w-none">DAIK DIGITAL STORE</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-6">
