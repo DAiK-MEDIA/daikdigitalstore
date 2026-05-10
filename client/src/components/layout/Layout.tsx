@@ -82,7 +82,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <footer className="bg-white border-t border-surface-highest py-8">
         <div className="max-w-7xl mx-auto px-4 text-center space-y-4">
           <p className="text-sm text-on-surface-variant font-medium">
-            © {new Date().getFullYear()} DAIK DIGITAL STORE. All rights reserved.
+            © {new Date().getFullYear()} DAIK. All rights reserved.
           </p>
           <div className="flex justify-center gap-6">
             <a href="/staff-hq/login" className="text-[10px] text-on-surface-variant uppercase font-black tracking-widest opacity-10 hover:opacity-100 transition-opacity">
