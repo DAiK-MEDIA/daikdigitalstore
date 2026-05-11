@@ -64,6 +64,12 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api/paystack', paystackRoutes);
 
+// Fallback: Redirect any other GET requests to the frontend status page if it looks like a status route
+app.get('/status/:ref', (req, res) => {
+  const clientUrl = process.env.CLIENT_URL || 'https://daikdigitalstore.vercel.app';
+  res.redirect(`${clientUrl}/status/${req.params.ref}`);
+});
+
 const startServer = async () => {
 
   app.listen(PORT, () => {
