@@ -10,7 +10,7 @@ import {
   LayoutDashboard, ShoppingBag, Settings as SettingsIcon,
   Plus, RefreshCw, Edit3, Trash2, Megaphone, Hash, ShieldCheck,
   LogOut, MessageSquare, X, TrendingUp, Clock, CheckCircle2, PackagePlus,
-  AlertTriangle, Server
+  AlertTriangle, Server, CreditCard, Smartphone, Check
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ interface Order {
   id: string; order_ref: string; full_name: string; phone_number: string;
   amount_paid: number; order_status: string; notification_message?: string;
   data_plans?: { size_label: string }; created_at: string;
+  payment_method?: string; payment_status?: string;
 }
 interface Plan {
   id: string; size_label: string; size_gb: number;
@@ -93,6 +94,7 @@ const AdminDashboard = () => {
   const [toast, setToast] = useState('');
   const [confirmDeletePlan, setConfirmDeletePlan] = useState<string | null>(null);
   const [confirmDeleteOrder, setConfirmDeleteOrder] = useState<string | null>(null);
+  const [filterPaymentStatus, setFilterPaymentStatus] = useState<'all' | 'unpaid' | 'paid'>('all');
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -148,6 +150,15 @@ const AdminDashboard = () => {
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/orders/${id}/status`, { status }, { headers });
       setOrders(prev => prev.map(o => o.id === id ? { ...o, order_status: status } : o));
     } catch { showToast('Failed to update status'); }
+  };
+
+  const approvePayment = async (id: string) => {
+    try {
+      const headers = await getAuthHeader();
+      const { data } = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/orders/${id}/approve`, {}, { headers });
+      setOrders(prev => prev.map(o => o.id === id ? data : o));
+      showToast('Payment approved!');
+    } catch { showToast('Failed to approve payment'); }
   };
 
   const sendNotification = async (orderId: string) => {
@@ -397,23 +408,47 @@ const AdminDashboard = () => {
               ))}
             </div>
 
-            {/* Manual Order Button */}
-            <div className="flex justify-end">
+            {/* Manual Order Button & Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-end gap-4">
+              <div className="flex gap-2">
+                {['all', 'unpaid', 'paid'].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilterPaymentStatus(f as any)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                      filterPaymentStatus === f 
+                        ? "bg-navy text-white shadow-lg" 
+                        : "bg-white text-navy border border-surface-highest hover:bg-surface-container"
+                    )}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
               <Button size="sm" onClick={() => setOrderModal(true)}>
                 <PackagePlus className="w-4 h-4" /> Manual Order
               </Button>
             </div>
 
             <div className="space-y-4">
-              {orders.length === 0 && !isLoading && (
+              {orders.filter(o => {
+                if (filterPaymentStatus === 'all') return true;
+                return o.payment_status === filterPaymentStatus;
+              }).length === 0 && !isLoading && (
                 <div className="py-20 text-center space-y-4 bg-white/50 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-surface-highest">
                   <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto opacity-50">
                     <ShoppingBag className="w-8 h-8 text-navy" />
                   </div>
-                  <p className="text-on-surface-variant font-black text-xl">No orders found</p>
+                  <p className="text-on-surface-variant font-black text-xl">No {filterPaymentStatus !== 'all' ? filterPaymentStatus : ''} orders found</p>
                 </div>
               )}
-              {orders.map((order) => (
+              {orders
+                .filter(o => {
+                  if (filterPaymentStatus === 'all') return true;
+                  return o.payment_status === filterPaymentStatus;
+                })
+                .map((order) => (
                 <motion.div
                   key={order.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -452,6 +487,27 @@ const AdminDashboard = () => {
                             <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">
                               {new Date(order.created_at).toLocaleDateString()}
                             </span>
+                            {/* Payment Badges */}
+                            <div className="flex gap-1">
+                              {order.payment_method === 'paystack' ? (
+                                <span className="flex items-center gap-1 text-[9px] font-black bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded uppercase tracking-tighter">
+                                  <CreditCard className="w-2.5 h-2.5" /> Paystack
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-[9px] font-black bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded uppercase tracking-tighter">
+                                  <Smartphone className="w-2.5 h-2.5" /> Manual
+                                </span>
+                              )}
+                              {order.payment_status === 'paid' ? (
+                                <span className="text-[9px] font-black bg-success/10 text-success px-2 py-0.5 rounded uppercase tracking-tighter">
+                                  Paid
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black bg-error/10 text-error px-2 py-0.5 rounded uppercase tracking-tighter animate-pulse">
+                                  Unpaid
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -503,24 +559,35 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          <button
-                            onClick={() => { setExpandedOrder(expandedOrder === order.id ? null : order.id); setNotifMsg(order.notification_message || ''); }}
-                            className={cn(
-                              "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
-                              expandedOrder === order.id || order.notification_message 
-                                ? "bg-navy text-yellow shadow-lg" 
-                                : "bg-surface-container text-navy hover:bg-navy hover:text-white"
-                            )}
-                          >
-                            <MessageSquare className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => deleteOrder(order.id)}
-                            className="w-12 h-12 rounded-xl flex items-center justify-center bg-error/10 text-error hover:bg-error hover:text-white transition-all"
-                            title="Delete Order"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          {order.payment_status !== 'paid' && (
+                            <button
+                              onClick={() => approvePayment(order.id)}
+                              className="w-12 h-12 rounded-xl flex items-center justify-center bg-success text-white shadow-lg hover:shadow-success/20 hover:scale-105 transition-all"
+                              title="Approve Payment"
+                            >
+                              <Check className="w-5 h-5" />
+                            </button>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { setExpandedOrder(expandedOrder === order.id ? null : order.id); setNotifMsg(order.notification_message || ''); }}
+                              className={cn(
+                                "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                                expandedOrder === order.id || order.notification_message 
+                                  ? "bg-navy text-yellow shadow-lg" 
+                                  : "bg-surface-container text-navy hover:bg-navy hover:text-white"
+                              )}
+                            >
+                              <MessageSquare className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => deleteOrder(order.id)}
+                              className="w-12 h-12 rounded-xl flex items-center justify-center bg-error/10 text-error hover:bg-error hover:text-white transition-all"
+                              title="Delete Order"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

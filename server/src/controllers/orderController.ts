@@ -119,3 +119,27 @@ export const getOrderStatus = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch order status' });
   }
 };
+
+export const updatePaymentMethod = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { method } = req.body;
+
+    if (!['paystack', 'momo'].includes(method)) {
+      return res.status(400).json({ error: 'Invalid payment method' });
+    }
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ payment_method: method })
+      .eq('id', orderId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error updating payment method:', error);
+    res.status(500).json({ error: 'Failed to update payment method' });
+  }
+};

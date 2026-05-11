@@ -5,6 +5,7 @@ import {
   updateOrderNotification, 
   createManualOrder,
   deleteOrder,
+  approveManualPayment,
   managePlans,
   getSettings,
   updateSettings
@@ -20,6 +21,7 @@ router.use(adminAuth);
 router.get('/orders', getAllOrders);
 router.patch('/orders/:id/status', updateOrderStatus);
 router.patch('/orders/:id/notification', updateOrderNotification);
+router.patch('/orders/:id/approve', approveManualPayment);
 router.post('/orders/manual', createManualOrder);
 router.delete('/orders/:id', deleteOrder);
 

@@ -60,9 +60,21 @@ const PaymentPage = () => {
     }
   };
 
-  const handleWhatsApp = () => {
-    const message = `Hello, I just made a MoMo payment for Order ID: ${order?.order_ref}. Amount: GHS ${order?.amount_paid}. Phone: ${order?.phone_number}. Please confirm.`;
-    window.open(`${settings?.whatsapp_link}?text=${encodeURIComponent(message)}`, '_blank');
+  const handleWhatsApp = async () => {
+    try {
+      // Mark as manual payment in backend
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order.id}/payment-method`, {
+        method: 'momo'
+      });
+      
+      const message = `Hello, I want to make a MoMo payment for Order ID: ${order?.order_ref}. Plan: ${order?.data_plans?.size_label}. Amount: GHS ${order?.amount_paid}. Phone: ${order?.phone_number}. Please guide me on how to proceed.`;
+      window.open(`${settings?.whatsapp_link}?text=${encodeURIComponent(message)}`, '_blank');
+    } catch (err) {
+      console.error('Failed to update payment method:', err);
+      // Still open WhatsApp even if API fails, to not block the user
+      const message = `Hello, I want to make a MoMo payment for Order ID: ${order?.order_ref}. Plan: ${order?.data_plans?.size_label}. Amount: GHS ${order?.amount_paid}. Phone: ${order?.phone_number}. Please guide me on how to proceed.`;
+      window.open(`${settings?.whatsapp_link}?text=${encodeURIComponent(message)}`, '_blank');
+    }
   };
 
   if (!order) return <div className="text-center py-20">Loading order...</div>;

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { generateUniqueOrderRef } from '../utils/orderRef';
+import { placeDataOrder } from '../services/getusApi';
 
 // --- Orders ---
 
@@ -96,6 +97,73 @@ export const deleteOrder = async (req: Request, res: Response) => {
     res.json({ message: 'Order deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to delete order' });
+  }
+};
+
+export const approveManualPayment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Fetch order details
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*, data_plans(size_label)')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // 2. Prepare updates
+    let updates: any = {
+      payment_status: 'paid',
+      payment_method: 'momo'
+    };
+
+    // 3. Check if Auto-Fulfillment is enabled
+    const { data: settings } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'auto_fulfill_api')
+      .single();
+      
+    const isApiEnabled = settings?.value === 'true';
+
+    if (isApiEnabled && order.data_plans?.size_label) {
+      try {
+        // Extract numeric GB from size_label (e.g. '1GB' -> 1)
+        const packageGb = parseFloat(order.data_plans.size_label);
+        
+        if (!isNaN(packageGb)) {
+          const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+          
+          if (getusRes.status === 'success') {
+            updates.order_status = 'processing';
+            updates.api_order_id = String(getusRes.order_id);
+          }
+        }
+      } catch (err) {
+        console.error('Manual approval: Auto-fulfillment failed:', err);
+        // We still mark as paid, but order_status stays 'pending' for manual retry
+      }
+    } else {
+      // If API not enabled, just mark as paid. Admin can manually update order_status later.
+    }
+
+    // 4. Update Database
+    const { data, error } = await supabase
+      .from('orders')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error approving payment:', error);
+    res.status(500).json({ error: 'Failed to approve payment' });
   }
 };
 
