@@ -12,19 +12,16 @@ import { cn } from '../../utils/cn';
 const StatusPage = () => {
   const { orderRef: urlRef } = useParams();
   const navigate = useNavigate();
-  const [searchRef, setSearchRef] = useState(urlRef || '');
+  const [searchRef, setSearchRef] = useState(urlRef ? urlRef.split('_')[0] : '');
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const fetchStatus = async (ref: string) => {
-    // Extract the original 7-digit ID if it's a Paystack reference (e.g., 1234567_timestamp)
-    const cleanRef = ref.split('_')[0];
-    
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${cleanRef}/status`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${ref}/status`);
       setOrder(response.data);
     } catch (err: any) {
       setError('Order not found. Please check your ID and try again.');
@@ -36,9 +33,17 @@ const StatusPage = () => {
 
   useEffect(() => {
     if (urlRef) {
-      fetchStatus(urlRef);
+      const cleanRef = urlRef.split('_')[0];
+      
+      // If the URL has the long reference, replace it with the clean 7-digit one
+      if (urlRef !== cleanRef) {
+        navigate(`/status/${cleanRef}`, { replace: true });
+        return;
+      }
+      
+      fetchStatus(cleanRef);
     }
-  }, [urlRef]);
+  }, [urlRef, navigate]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
