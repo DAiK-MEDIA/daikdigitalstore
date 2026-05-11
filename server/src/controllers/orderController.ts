@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { generateUniqueOrderRef } from '../utils/orderRef';
+import { checkOrderStatus } from '../services/getusApi';
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -62,6 +63,7 @@ export const getOrderStatus = async (req: Request, res: Response) => {
         phone_number,
         amount_paid,
         order_status,
+        api_order_id,
         notification_message,
         data_plans (
           size_label
@@ -72,6 +74,34 @@ export const getOrderStatus = async (req: Request, res: Response) => {
 
     if (error || !data) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Lazy Polling: If it's processing and has a GetUs order ID, check its real-time status
+    if (data.order_status === 'processing' && data.api_order_id) {
+      try {
+        const getusRes = await checkOrderStatus(data.api_order_id);
+        
+        let newStatus = null;
+        if (getusRes.order_status === 'SUCCESS') {
+          newStatus = 'delivered';
+        } else if (getusRes.order_status === 'FAILED') {
+          newStatus = 'cancelled'; // or failed if you add that status
+        }
+
+        if (newStatus) {
+          // Update database
+          await supabase
+            .from('orders')
+            .update({ order_status: newStatus })
+            .eq('id', data.id);
+            
+          // Update the local data object so the user sees it immediately
+          data.order_status = newStatus;
+        }
+      } catch (err) {
+        console.error('Lazy polling failed for order', data.order_ref, err);
+        // Continue and just return the current 'processing' status
+      }
     }
 
     // Mask phone number as per PRD (e.g. 059****123)

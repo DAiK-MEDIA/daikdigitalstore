@@ -10,7 +10,7 @@ import {
   LayoutDashboard, ShoppingBag, Settings as SettingsIcon,
   Plus, RefreshCw, Edit3, Trash2, Megaphone, Hash, ShieldCheck,
   LogOut, MessageSquare, X, TrendingUp, Clock, CheckCircle2, PackagePlus,
-  AlertTriangle
+  AlertTriangle, Server
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -646,6 +646,23 @@ const AdminDashboard = () => {
                 </h3>
                 <Input label="Agent Login Password" type="password" placeholder="Set a new password" onChange={(e) => setSettings({ ...settings, agent_password_hash: e.target.value })} />
                 <p className="text-xs text-on-surface-variant">Leave blank to keep current password.</p>
+              </div>
+
+              {/* API Integrations */}
+              <div className="space-y-4 pt-6 border-t border-surface-highest">
+                <h3 className="font-bold text-navy flex items-center gap-2">
+                  <Server className="w-4 h-4 text-navy" /> API Integrations
+                </h3>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className={cn('w-11 h-6 rounded-full transition-colors relative', settings.auto_fulfill_api === 'true' ? 'bg-navy' : 'bg-surface-container')}>
+                    <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all', settings.auto_fulfill_api === 'true' ? 'left-6' : 'left-1')} />
+                    <input type="checkbox" className="sr-only" checked={settings.auto_fulfill_api === 'true'} onChange={(e) => setSettings({ ...settings, auto_fulfill_api: e.target.checked.toString() })} />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-bold text-navy block">Auto-Fulfillment API (GetUs)</span>
+                    <span className="text-xs text-on-surface-variant block">Automatically send data via API when customers pay.</span>
+                  </div>
+                </label>
               </div>
 
               {/* General Settings */}

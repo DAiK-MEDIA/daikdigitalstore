@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { initializeTransaction, verifyTransaction } from '../services/paystack';
+import { placeDataOrder } from '../services/getusApi';
 import crypto from 'crypto';
 
 export const initPayment = async (req: Request, res: Response) => {
@@ -47,16 +48,56 @@ export const paystackWebhook = async (req: Request, res: Response) => {
         const fullReference = event.data.reference;
         const reference = fullReference.split('_')[0]; // Extract the original order_ref
         
-        // Update order status in Supabase
-        const { error } = await supabase
+        // Fetch order details
+        const { data: order } = await supabase
           .from('orders')
-          .update({ 
+          .select('*, data_plans(size_label)')
+          .eq('order_ref', reference)
+          .single();
+
+        if (order) {
+          // Check API Switch state
+          const { data: settings } = await supabase
+            .from('admin_settings')
+            .select('value')
+            .eq('key', 'auto_fulfill_api')
+            .single();
+            
+          const isApiEnabled = settings?.value === 'true';
+
+          let updates: any = {
             payment_status: 'paid',
             payment_method: 'paystack'
-          })
-          .eq('order_ref', reference);
+          };
 
-        if (error) console.error('Webhook DB update error:', error);
+          if (isApiEnabled && order.data_plans?.size_label) {
+            try {
+              // Extract numeric GB from size_label (e.g. '1GB' -> 1)
+              const packageGb = parseFloat(order.data_plans.size_label);
+              
+              if (!isNaN(packageGb)) {
+                // Assuming all orders are MTN based on your requirement
+                const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+                
+                if (getusRes.status === 'success') {
+                  updates.order_status = 'processing';
+                  updates.api_order_id = String(getusRes.order_id);
+                }
+              }
+            } catch (err) {
+              console.error('Failed to auto-fulfill order via GetUs API:', err);
+              // Fallback to manual mode (keeps order_status as 'pending' or whatever it was)
+            }
+          }
+
+          // Update order status in Supabase
+          const { error } = await supabase
+            .from('orders')
+            .update(updates)
+            .eq('order_ref', reference);
+
+          if (error) console.error('Webhook DB update error:', error);
+        }
       }
     }
 
