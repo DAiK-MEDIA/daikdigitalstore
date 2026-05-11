@@ -432,22 +432,24 @@ const AdminDashboard = () => {
 
                     <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-6 items-start lg:items-center">
                       {/* Section 1: ID & Avatar */}
-                      <div className="flex items-center gap-5 shrink-0">
+                      <div className="flex items-center gap-4 md:gap-5 min-w-0">
                         <div 
                           onClick={() => copyToClipboard(order.order_ref)}
-                          className="w-20 h-20 bg-surface-container hover:bg-navy hover:text-yellow rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer group/id"
+                          className="w-16 h-16 md:w-20 md:h-20 shrink-0 bg-surface-container hover:bg-navy hover:text-yellow rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer group/id"
                         >
-                          <span className="text-[10px] font-black uppercase tracking-tighter opacity-40 group-hover/id:text-yellow/60">Order</span>
-                          <span className="text-lg font-black leading-none">#{order.order_ref}</span>
+                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter opacity-40 group-hover/id:text-yellow/60">Order</span>
+                          <span className="text-base md:text-lg font-black leading-none">#{order.order_ref}</span>
                           <span className="text-[8px] font-bold mt-1 opacity-0 group-hover/id:opacity-100 transition-opacity">COPY</span>
                         </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xl font-black text-navy leading-tight">{order.full_name}</h4>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-on-surface-variant/40 bg-surface-container px-2 py-0.5 rounded cursor-help" title={`Full ID: ${order.id}`}>
+                        <div className="space-y-1 min-w-0">
+                          <h4 className="text-lg md:text-xl font-black text-navy leading-tight truncate" title={order.full_name}>
+                            {order.full_name}
+                          </h4>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-bold text-on-surface-variant/40 bg-surface-container px-2 py-0.5 rounded cursor-help truncate" title={`Full ID: ${order.id}`}>
                               {order.id.slice(0, 8)}...
                             </span>
-                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60">
+                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">
                               {new Date(order.created_at).toLocaleDateString()}
                             </span>
                           </div>
