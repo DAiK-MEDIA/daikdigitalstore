@@ -5,7 +5,7 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { Search, Info, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Info, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../utils/cn';
 
@@ -162,6 +162,17 @@ const StatusPage = () => {
               </Card>
             </motion.div>
           )}
+
+          <div className="pt-4">
+            <Button 
+              variant="outline"
+              className="w-full py-4 text-lg border-2 border-surface-highest" 
+              onClick={() => navigate('/')}
+            >
+              <Home className="w-5 h-5 mr-2" />
+              Return to Homepage
+            </Button>
+          </div>
         </motion.div>
       )}
     </div>
