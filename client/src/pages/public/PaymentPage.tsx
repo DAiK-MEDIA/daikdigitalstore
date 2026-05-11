@@ -5,6 +5,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { CreditCard, Smartphone, MessageCircle, Info, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Order {
   id: string;
@@ -70,7 +71,7 @@ const PaymentPage = () => {
     <div className="max-w-xl mx-auto space-y-8">
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-black text-navy">Secure Payment</h2>
-        <p className="text-on-surface-variant">Choose your preferred method to complete the {order.data_plans.size_label} purchase.</p>
+        <p className="text-on-surface-variant">Choose your preferred method to complete the {order.data_plans?.size_label} purchase.</p>
       </div>
 
       <Card className="bg-navy/5 border-navy/10 text-center space-y-2 py-6">
@@ -211,8 +212,5 @@ const PaymentPage = () => {
     </div>
   );
 };
-
-// Missing imports fix
-import { AnimatePresence, motion } from 'framer-motion';
 
 export default PaymentPage;

@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { Search, Info, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { cn } from '../../utils/cn';
 
 const StatusPage = () => {
   const { orderRef: urlRef } = useParams();
@@ -118,7 +119,7 @@ const StatusPage = () => {
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Bundle</span>
-                <p className="text-lg font-bold text-navy">{order.data_plans.size_label}</p>
+                <p className="text-lg font-bold text-navy">{order.data_plans?.size_label}</p>
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Recipient</span>
@@ -166,8 +167,5 @@ const StatusPage = () => {
     </div>
   );
 };
-
-// Utils fix
-import { cn } from '../../utils/cn';
 
 export default StatusPage;
