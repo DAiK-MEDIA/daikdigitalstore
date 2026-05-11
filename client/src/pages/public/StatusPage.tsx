@@ -17,10 +17,13 @@ const StatusPage = () => {
   const [error, setError] = useState('');
 
   const fetchStatus = async (ref: string) => {
+    // Extract the original 7-digit ID if it's a Paystack reference (e.g., 1234567_timestamp)
+    const cleanRef = ref.split('_')[0];
+    
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${ref}/status`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${cleanRef}/status`);
       setOrder(response.data);
     } catch (err: any) {
       setError('Order not found. Please check your ID and try again.');
