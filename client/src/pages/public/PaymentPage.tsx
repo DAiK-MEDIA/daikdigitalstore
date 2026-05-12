@@ -67,7 +67,7 @@ const PaymentPage = () => {
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order.id}/payment-method`, {
         method: 'momo'
       });
-      
+
       const message = `Hello, I want to make a MoMo payment for Order ID: ${order?.order_ref}. Plan: ${order?.data_plans?.size_label}. Amount: GHS ${order?.amount_paid}. Phone: ${order?.phone_number}. Please guide me on how to proceed.`;
       window.open(`${settings?.whatsapp_link}?text=${encodeURIComponent(message)}`, '_blank');
     } catch (err) {

@@ -404,38 +404,40 @@ const AdminDashboard = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-navy' },
-                { label: 'Pending', value: pendingCount, icon: Clock, color: 'text-yellow' },
-                { label: 'Delivered', value: deliveredCount, icon: CheckCircle2, color: 'text-success' },
-                { label: 'Revenue (GHS)', value: totalRevenue.toFixed(2), icon: TrendingUp, color: 'text-secondary' },
-              ].map(({ label, value, icon: Icon, color }) => (
-                <Card key={label} className="p-4 text-center space-y-1">
-                  <Icon className={cn('w-5 h-5 mx-auto', color)} />
+                { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-navy', bg: 'bg-navy/5' },
+                { label: 'Pending', value: pendingCount, icon: Clock, color: 'text-pending', bg: 'bg-pending/5' },
+                { label: 'Delivered', value: deliveredCount, icon: CheckCircle2, color: 'text-success', bg: 'bg-success/5' },
+                { label: 'Revenue (GHS)', value: totalRevenue.toFixed(2), icon: TrendingUp, color: 'text-secondary', bg: 'bg-secondary/5' },
+              ].map(({ label, value, icon: Icon, color, bg }) => (
+                <Card key={label} className={cn("p-5 flex flex-col items-center justify-center space-y-2 border-none shadow-premium hover:scale-[1.02] transition-all", bg)}>
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-1", bg.replace('/5', '/10'))}>
+                    <Icon className={cn('w-5 h-5', color)} />
+                  </div>
                   <p className="text-2xl font-black text-navy">{value}</p>
-                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{label}</p>
+                  <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">{label}</p>
                 </Card>
               ))}
             </div>
 
             {/* Manual Order Button & Filters */}
-            <div className="flex flex-col sm:flex-row justify-between items-end gap-4">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[1.5rem] border border-surface-highest/50 shadow-sm">
+              <div className="flex p-1 bg-surface-container/50 rounded-xl w-full sm:w-auto">
                 {['all', 'unpaid', 'paid'].map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilterPaymentStatus(f as any)}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all",
+                      "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300",
                       filterPaymentStatus === f 
-                        ? "bg-navy text-white shadow-lg" 
-                        : "bg-white text-navy border border-surface-highest hover:bg-surface-container"
+                        ? "bg-navy text-white shadow-md scale-[1.02]" 
+                        : "text-on-surface-variant hover:text-navy hover:bg-white/50"
                     )}
                   >
                     {f}
                   </button>
                 ))}
               </div>
-              <Button size="sm" onClick={() => setOrderModal(true)}>
+              <Button size="sm" onClick={() => setOrderModal(true)} className="w-full sm:w-auto rounded-xl shadow-lg hover:shadow-navy/20">
                 <PackagePlus className="w-4 h-4" /> Manual Order
               </Button>
             </div>
@@ -464,105 +466,112 @@ const AdminDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="group relative"
                 >
-                  <Card className="p-0 overflow-hidden border-none shadow-premium hover:shadow-2xl transition-all duration-300">
-                    {/* Status accent bar */}
+                  <Card className="p-0 overflow-hidden border-none shadow-premium hover:shadow-2xl transition-all duration-500 group/card">
+                    {/* Status accent bar - more subtle and modern */}
                     <div className={cn(
-                      "absolute top-0 left-0 w-1.5 h-full transition-all duration-300",
-                      order.order_status === 'pending' && "bg-pending shadow-[0_0_10px_rgba(255,183,0,0.5)]",
-                      order.order_status === 'processing' && "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]",
-                      order.order_status === 'delivered' && "bg-success shadow-[0_0_10px_rgba(34,197,94,0.5)]",
-                      order.order_status === 'cancelled' && "bg-error shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                      "absolute top-0 left-0 w-1.5 h-full transition-all duration-500 z-10",
+                      order.order_status === 'pending' && "bg-pending",
+                      order.order_status === 'processing' && "bg-blue-500",
+                      order.order_status === 'delivered' && "bg-success",
+                      order.order_status === 'cancelled' && "bg-error"
                     )} />
 
-                    <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-6 items-start lg:items-center">
-                      {/* Section 1: ID & Avatar */}
-                      <div className="flex items-center gap-4 md:gap-5 min-w-0">
-                        <div 
-                          onClick={() => copyToClipboard(order.order_ref)}
-                          className="w-16 h-16 md:w-20 md:h-20 shrink-0 bg-surface-container hover:bg-navy hover:text-yellow rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer group/id"
-                        >
-                          <span className="text-[9px] md:text-[10px] font-black uppercase tracking-tighter opacity-40 group-hover/id:text-yellow/60">Order</span>
-                          <span className="text-base md:text-lg font-black leading-none">#{order.order_ref}</span>
-                          <span className="text-[8px] font-bold mt-1 opacity-0 group-hover/id:opacity-100 transition-opacity">COPY</span>
+                    <div className="p-0 flex flex-col">
+                      {/* Top Header: ID, Date, Payment Status */}
+                      <div className="px-6 py-4 bg-surface-container/30 border-b border-surface-highest flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            onClick={() => copyToClipboard(order.order_ref)}
+                            className="bg-navy text-white px-3 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer hover:bg-navy/90 transition-colors shadow-sm"
+                          >
+                            <Hash className="w-3.5 h-3.5 text-yellow" />
+                            <span className="text-xs font-black tracking-wider uppercase">#{order.order_ref.slice(-6)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-on-surface-variant/60">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                              {new Date(order.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                            </span>
+                          </div>
                         </div>
-                        <div className="space-y-1 min-w-0">
-                          <h4 className="text-lg md:text-xl font-black text-navy leading-tight truncate" title={order.full_name}>
-                            {order.full_name}
-                          </h4>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-bold text-on-surface-variant/40 bg-surface-container px-2 py-0.5 rounded cursor-help truncate" title={`Full ID: ${order.id}`}>
-                              {order.id.slice(0, 8)}...
-                            </span>
-                            <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60 whitespace-nowrap">
-                              {new Date(order.created_at).toLocaleDateString()}
-                            </span>
-                            {/* Payment Badges */}
-                            <div className="flex gap-1">
-                              {order.payment_method === 'paystack' && (
-                                <span className="flex items-center gap-1 text-[9px] font-black bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded uppercase tracking-tighter">
-                                  <CreditCard className="w-2.5 h-2.5" /> Paystack
-                                </span>
-                              )}
-                              {order.payment_method === 'momo' && (
-                                <span className="flex items-center gap-1 text-[9px] font-black bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded uppercase tracking-tighter">
-                                  <Smartphone className="w-2.5 h-2.5" /> Manual
-                                </span>
-                              )}
-                              {!order.payment_method && (
-                                <span className="flex items-center gap-1 text-[9px] font-black bg-surface-container text-on-surface-variant px-2 py-0.5 rounded uppercase tracking-tighter">
-                                  No Selection
-                                </span>
-                              )}
-                              {order.payment_status === 'paid' ? (
-                                <span className="text-[9px] font-black bg-success/10 text-success px-2 py-0.5 rounded uppercase tracking-tighter">
-                                  Paid
-                                </span>
-                              ) : (
-                                <span className="text-[9px] font-black bg-error/10 text-error px-2 py-0.5 rounded uppercase tracking-tighter animate-pulse">
-                                  Unpaid
-                                </span>
-                              )}
-                            </div>
+
+                        <div className="flex items-center gap-2">
+                          {/* Payment Method Badge */}
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-surface-highest shadow-sm">
+                            {order.payment_method === 'paystack' ? (
+                              <><CreditCard className="w-3 h-3 text-blue-500" /><span className="text-[9px] font-black uppercase text-blue-600">Paystack</span></>
+                            ) : order.payment_method === 'momo' ? (
+                              <><Smartphone className="w-3 h-3 text-orange-500" /><span className="text-[9px] font-black uppercase text-orange-600">Manual MoMo</span></>
+                            ) : (
+                              <span className="text-[9px] font-black uppercase text-on-surface-variant/40">No Method</span>
+                            )}
+                          </div>
+
+                          {/* Payment Status Badge */}
+                          <div className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
+                            order.payment_status === 'paid' 
+                              ? "bg-success/10 text-success border border-success/20" 
+                              : "bg-error/10 text-error border border-error/20 animate-pulse"
+                          )}>
+                            {order.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
                           </div>
                         </div>
                       </div>
 
-                      {/* Section 2: Details */}
-                      <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                        <div 
-                          onClick={() => copyToClipboard(order.phone_number)}
-                          className="bg-surface-container/50 hover:bg-surface-container p-3 rounded-xl border border-surface-highest transition-colors cursor-pointer group/phone"
-                        >
-                          <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-50 mb-1 flex justify-between">
-                            Recipient
-                            <span className="opacity-0 group-hover/phone:opacity-100 transition-opacity text-navy">Copy</span>
-                          </p>
-                          <p className="font-black text-navy text-lg">{order.phone_number}</p>
-                        </div>
-                        <div className="bg-navy p-3 rounded-xl shadow-lg relative overflow-hidden group/plan">
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-yellow/10 rounded-full -mr-8 -mt-8" />
-                          <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Bundle & Amount</p>
-                          <p className="font-black text-white text-lg flex items-center justify-between">
-                            {order.data_plans?.size_label}
-                            <span className="text-yellow">GHS {order.amount_paid}</span>
+                      {/* Main Body: Info Grid */}
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-center">
+                        
+                        {/* Customer Info */}
+                        <div className="space-y-1.5 min-w-0">
+                          <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em]">Customer</p>
+                          <h4 className="text-lg font-black text-navy leading-tight truncate" title={order.full_name}>
+                            {order.full_name}
+                          </h4>
+                          <p className="text-[10px] font-bold text-on-surface-variant/60 truncate opacity-0 group-hover/card:opacity-100 transition-opacity">
+                            ID: {order.id.slice(0, 8)}...
                           </p>
                         </div>
-                      </div>
 
-                      {/* Section 3: Actions */}
-                      <div className="flex items-center gap-4 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-surface-highest">
-                        <div className="flex-grow lg:flex-grow-0 min-w-[140px]">
-                          <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-50 mb-2 ml-1">Order Status</p>
-                          <div className="relative group/select">
+                        {/* Recipient */}
+                        <div className="space-y-1.5 min-w-0">
+                          <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em]">Recipient</p>
+                          <div 
+                            onClick={() => copyToClipboard(order.phone_number)}
+                            className="flex items-center gap-2 group/phone cursor-pointer"
+                          >
+                            <span className="text-lg font-black text-navy tracking-tight">{order.phone_number}</span>
+                            <span className="opacity-0 group-hover/phone:opacity-100 transition-opacity text-[10px] font-black text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">COPY</span>
+                          </div>
+                        </div>
+
+                        {/* Product/Plan */}
+                        <div className="lg:col-span-1">
+                          <div className="bg-gradient-to-br from-navy to-navy/80 p-4 rounded-2xl shadow-lg relative overflow-hidden group/plan">
+                            <div className="absolute -right-4 -top-4 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover/plan:scale-150 transition-transform duration-700" />
+                            <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">Bundle & Amount</p>
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span className="text-lg font-black text-white truncate" title={order.data_plans?.size_label}>
+                                {order.data_plans?.size_label}
+                              </span>
+                              <span className="text-yellow font-black text-sm whitespace-nowrap">GHS {order.amount_paid}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status & Quick Actions */}
+                        <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center gap-4">
+                          <div className="w-full relative group/status">
+                            <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] mb-2 ml-1">Order Status</p>
                             <select
                               value={order.order_status}
                               onChange={(e) => updateStatus(order.id, e.target.value)}
                               className={cn(
-                                "w-full appearance-none px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider border-2 transition-all cursor-pointer",
-                                order.order_status === 'pending' && "bg-pending/10 text-secondary border-pending/20 hover:border-pending",
-                                order.order_status === 'processing' && "bg-blue-50 text-blue-700 border-blue-200 hover:border-blue-400",
-                                order.order_status === 'delivered' && "bg-success/10 text-success border-success/20 hover:border-success",
-                                order.order_status === 'cancelled' && "bg-error/10 text-error border-error/20 hover:border-error"
+                                "w-full appearance-none px-5 py-3 rounded-full text-[11px] font-black uppercase tracking-[0.1em] border-2 transition-all cursor-pointer shadow-sm text-center",
+                                order.order_status === 'pending' && "bg-pending/10 text-secondary border-pending/30 focus:border-pending hover:bg-pending/20",
+                                order.order_status === 'processing' && "bg-blue-50 text-blue-700 border-blue-200 focus:border-blue-400 hover:bg-blue-100",
+                                order.order_status === 'delivered' && "bg-success/10 text-success border-success/30 focus:border-success hover:bg-success/20",
+                                order.order_status === 'cancelled' && "bg-error/10 text-error border-error/30 focus:border-error hover:bg-error/20"
                               )}
                             >
                               <option value="pending">PENDING</option>
@@ -571,48 +580,48 @@ const AdminDashboard = () => {
                               <option value="cancelled">CANCELLED</option>
                             </select>
                           </div>
-                        </div>
 
-                        <div className="flex flex-col gap-2">
-                          {order.payment_status !== 'paid' && order.order_status !== 'cancelled' && (
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => approvePayment(order.id)}
-                                className="w-12 h-12 rounded-xl flex items-center justify-center bg-success text-white shadow-lg hover:shadow-success/20 hover:scale-105 transition-all"
-                                title="Approve Payment"
-                              >
-                                <Check className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => declinePayment(order.id)}
-                                className="w-12 h-12 rounded-xl flex items-center justify-center bg-error text-white shadow-lg hover:shadow-error/20 hover:scale-105 transition-all"
-                                title="Decline Payment"
-                              >
-                                <X className="w-5 h-5" />
-                              </button>
-                            </div>
-                          )}
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2 self-end lg:self-center xl:self-end pt-5 lg:pt-0">
+                            {order.payment_status !== 'paid' && order.order_status !== 'cancelled' && (
+                              <>
+                                <button
+                                  onClick={() => approvePayment(order.id)}
+                                  className="w-11 h-11 rounded-xl flex items-center justify-center bg-success text-white shadow-lg hover:shadow-success/30 hover:-translate-y-0.5 transition-all"
+                                  title="Approve Payment"
+                                >
+                                  <Check className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => declinePayment(order.id)}
+                                  className="w-11 h-11 rounded-xl flex items-center justify-center bg-error text-white shadow-lg hover:shadow-error/30 hover:-translate-y-0.5 transition-all"
+                                  title="Decline Payment"
+                                >
+                                  <X className="w-5 h-5" />
+                                </button>
+                              </>
+                            )}
                             <button
                               onClick={() => { setExpandedOrder(expandedOrder === order.id ? null : order.id); setNotifMsg(order.notification_message || ''); }}
                               className={cn(
-                                "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                                "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
                                 expandedOrder === order.id || order.notification_message 
-                                  ? "bg-navy text-yellow shadow-lg" 
+                                  ? "bg-navy text-yellow shadow-lg scale-105" 
                                   : "bg-surface-container text-navy hover:bg-navy hover:text-white"
                               )}
+                              title="Customer Support Message"
                             >
                               <MessageSquare className="w-5 h-5" />
                             </button>
                             <button
                               onClick={() => deleteOrder(order.id)}
-                              className="w-12 h-12 rounded-xl flex items-center justify-center bg-error/10 text-error hover:bg-error hover:text-white transition-all"
-                              title="Delete Order"
+                              className="w-11 h-11 rounded-xl flex items-center justify-center bg-error/5 text-error border border-error/10 hover:bg-error hover:text-white hover:border-error transition-all"
+                              title="Delete Permanently"
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
                           </div>
                         </div>
+
                       </div>
                     </div>
 
@@ -623,39 +632,38 @@ const AdminDashboard = () => {
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="bg-yellow/5 border-t-2 border-yellow/20 overflow-hidden"
+                          className="bg-yellow/5 border-t border-yellow/20 overflow-hidden"
                         >
                           {expandedOrder === order.id ? (
                             <div className="p-6 md:p-8 space-y-4">
                               <div className="flex items-center gap-2 text-navy">
-                                <MessageSquare className="w-4 h-4" />
-                                <span className="text-xs font-black uppercase tracking-widest">Send Private Update</span>
+                                <MessageSquare className="w-4 h-4 text-yellow" />
+                                <span className="text-xs font-black uppercase tracking-widest">Direct Customer Update</span>
                               </div>
-                              <div className="flex gap-4">
+                              <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="flex-grow relative">
                                   <input
                                     type="text"
                                     placeholder="Type a private message to the customer..."
                                     value={notifMsg}
                                     onChange={e => setNotifMsg(e.target.value)}
-                                    className="w-full bg-white border-2 border-surface-highest focus:border-navy rounded-2xl px-5 py-3 text-sm font-bold transition-all pr-12"
+                                    className="w-full bg-white border-2 border-surface-highest focus:border-navy rounded-2xl px-5 py-3.5 text-sm font-bold transition-all shadow-inner"
                                   />
-                                  <MessageSquare className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant opacity-20" />
                                 </div>
-                                <Button isLoading={notifLoading} onClick={() => sendNotification(order.id)} className="px-8 rounded-2xl">
+                                <Button isLoading={notifLoading} onClick={() => sendNotification(order.id)} className="px-8 rounded-2xl shadow-lg">
                                   Send Update
                                 </Button>
                               </div>
                             </div>
                           ) : (
-                            <div className="px-8 py-4 flex items-center justify-between">
+                            <div className="px-8 py-4 flex items-center justify-between bg-yellow/10">
                               <div className="flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                                 <p className="text-sm font-bold text-navy italic">"{order.notification_message}"</p>
                               </div>
                               <button 
                                 onClick={() => { setExpandedOrder(order.id); setNotifMsg(order.notification_message || ''); }}
-                                className="text-[10px] font-black text-navy uppercase tracking-widest hover:underline"
+                                className="text-[10px] font-black text-navy uppercase tracking-widest hover:underline bg-white px-3 py-1.5 rounded-lg shadow-sm"
                               >
                                 Edit Message
                               </button>
@@ -680,29 +688,44 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {plans.map((plan) => (
-                <Card key={plan.id} className={cn('relative', !plan.is_active && 'opacity-60')}>
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-black text-navy">{plan.size_label}</h3>
-                      <p className="text-xs text-on-surface-variant font-bold">{plan.size_gb} GB</p>
+               {plans.map((plan) => (
+                <Card key={plan.id} className={cn(
+                  'relative group/plan border-none transition-all duration-300',
+                  plan.is_active ? 'shadow-premium hover:shadow-2xl' : 'opacity-60 grayscale-[0.5]'
+                )}>
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="space-y-1">
+                      <h3 className="text-2xl font-black text-navy group-hover/plan:text-blue-600 transition-colors">{plan.size_label}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-widest">Capacity</span>
+                        <span className="text-xs text-navy font-bold">{plan.size_gb} GB</span>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <button onClick={() => togglePlan(plan)} className={cn('px-2 py-1 rounded-lg text-xs font-bold transition-colors', plan.is_active ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-error/10 text-error hover:bg-error/20')}>
-                        {plan.is_active ? 'Active' : 'Inactive'}
+                    <div className="flex gap-1.5">
+                      <button 
+                        onClick={() => togglePlan(plan)} 
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all', 
+                          plan.is_active ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-error/10 text-error hover:bg-error/20'
+                        )}
+                      >
+                        {plan.is_active ? 'Active' : 'Paused'}
                       </button>
-                      <button onClick={() => openEditPlan(plan)} className="p-2 text-navy hover:bg-surface-container rounded-lg transition-colors"><Edit3 className="w-4 h-4" /></button>
-                      <button onClick={() => deletePlan(plan.id)} className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <div className="flex bg-surface-container/50 rounded-lg p-0.5">
+                        <button onClick={() => openEditPlan(plan)} className="p-2 text-navy hover:bg-white rounded-md transition-all shadow-sm" title="Edit Plan"><Edit3 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => deletePlan(plan.id)} className="p-2 text-error hover:bg-white rounded-md transition-all shadow-sm" title="Delete Plan"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-2 border-t border-surface-highest pt-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-on-surface-variant">Client Price</span>
-                      <span className="font-bold text-navy">GHS {plan.client_price}</span>
+                  
+                  <div className="grid grid-cols-2 gap-3 pt-6 border-t border-surface-highest/50">
+                    <div className="space-y-1 bg-surface-container/30 p-3 rounded-xl">
+                      <p className="text-[9px] font-black text-on-surface-variant/40 uppercase tracking-widest">Client Price</p>
+                      <p className="font-black text-navy text-lg">GHS {plan.client_price}</p>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-on-surface-variant">Agent Price</span>
-                      <span className="font-bold text-secondary">GHS {plan.agent_price}</span>
+                    <div className="space-y-1 bg-secondary/5 p-3 rounded-xl border border-secondary/10">
+                      <p className="text-[9px] font-black text-secondary/60 uppercase tracking-widest">Agent Price</p>
+                      <p className="font-black text-secondary text-lg">GHS {plan.agent_price}</p>
                     </div>
                   </div>
                 </Card>
