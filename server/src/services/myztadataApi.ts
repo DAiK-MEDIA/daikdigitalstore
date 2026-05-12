@@ -12,25 +12,35 @@ const myZtaClient = axios.create({
   },
 });
 
+// Helper to get formatted error
+const getMyZtaError = (error: any) => {
+  return error.response?.data || { message: error.message };
+};
+
+
 export const fetchNetworks = async () => {
   try {
     const response = await myZtaClient.get('/fetch-networks');
     return response.data;
   } catch (error: any) {
-    console.error('MyZtaData Fetch Networks Error:', error.response?.data || error.message);
-    throw error;
+    const err = getMyZtaError(error);
+    console.error('MyZtaData Fetch Networks Error:', err);
+    throw err;
   }
 };
+
 
 export const fetchDataPackages = async () => {
   try {
     const response = await myZtaClient.get('/fetch-data-packages');
     return response.data;
   } catch (error: any) {
-    console.error('MyZtaData Fetch Packages Error:', error.response?.data || error.message);
-    throw error;
+    const err = getMyZtaError(error);
+    console.error('MyZtaData Fetch Packages Error:', err);
+    throw err;
   }
 };
+
 
 export const buyOtherPackage = async (msisdn: string, networkId: number, sharedBundle: number, externalRef?: string) => {
   try {
@@ -42,7 +52,9 @@ export const buyOtherPackage = async (msisdn: string, networkId: number, sharedB
     });
     return response.data;
   } catch (error: any) {
-    console.error('MyZtaData Buy Package Error:', error.response?.data || error.message);
-    throw error;
+    const err = getMyZtaError(error);
+    console.error('MyZtaData Buy Package Error:', err);
+    throw err;
   }
 };
+

@@ -11,6 +11,11 @@ const getusClient = axios.create({
   },
 });
 
+// Helper to get formatted error
+const getGetUsError = (error: any) => {
+  return error.response?.data || { message: error.message };
+};
+
 export const placeDataOrder = async (network: string, packageGb: number, recipient: string) => {
   try {
     const response = await getusClient.post('/order', {
@@ -20,8 +25,9 @@ export const placeDataOrder = async (network: string, packageGb: number, recipie
     });
     return response.data;
   } catch (error: any) {
-    console.error('GetUs Place Order Error:', error.response?.data || error.message);
-    throw error;
+    const err = getGetUsError(error);
+    console.error('GetUs Place Order Error:', err);
+    throw err;
   }
 };
 
@@ -30,7 +36,9 @@ export const checkOrderStatus = async (orderId: string | number) => {
     const response = await getusClient.get(`/order-status?order_id=${orderId}`);
     return response.data;
   } catch (error: any) {
-    console.error('GetUs Check Status Error:', error.response?.data || error.message);
-    throw error;
+    const err = getGetUsError(error);
+    console.error('GetUs Check Status Error:', err);
+    throw err;
   }
 };
+

@@ -82,37 +82,59 @@ export const paystackWebhook = async (req: Request, res: Response) => {
               
               if (!isNaN(packageGb)) {
                 let fulfilled = false;
+                let apiSource = '';
+                let apiResponse = null;
 
                 if (isMyZtaDataEnabled) {
                   try {
-                    const myZtaRes = await buyOtherPackage(order.phone_number, 3, packageGb * 1000, order.order_ref);
+                    // MyZtaData volume is display_volume * 1000 for MTN (ID 3)
+                    const sharedBundle = packageGb * 1000;
+                    console.log(`Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB)`);
+                    
+                    const myZtaRes = await buyOtherPackage(order.phone_number, 3, sharedBundle, order.order_ref);
+                    
                     if (myZtaRes.success) {
                       updates.order_status = 'processing';
                       updates.api_order_id = String(myZtaRes.transaction_code);
+                      apiSource = 'myztadata';
+                      apiResponse = myZtaRes;
                       fulfilled = true;
+                      console.log(`MyZtaData fulfillment successful for ${order.order_ref}: ${myZtaRes.transaction_code}`);
                     }
                   } catch (err: any) {
-                    console.error('Paystack webhook: MyZtaData auto-fulfillment failed:', err?.response?.data || err.message);
+                    console.error(`Paystack webhook: MyZtaData auto-fulfillment failed for ${order.order_ref}:`, err);
                   }
                 }
 
                 if (!fulfilled && isGetUsEnabled) {
                   try {
+                    console.log(`Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB`);
                     const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+                    
                     if (getusRes.status === 'success') {
                       updates.order_status = 'processing';
                       updates.api_order_id = String(getusRes.order_id);
+                      apiSource = 'getus';
+                      apiResponse = getusRes;
                       fulfilled = true;
+                      console.log(`GetUs fulfillment successful for ${order.order_ref}: ${getusRes.order_id}`);
                     }
                   } catch (err: any) {
-                    console.error('Paystack webhook: GetUs auto-fulfillment failed:', err?.response?.data || err.message);
+                    console.error(`Paystack webhook: GetUs auto-fulfillment failed for ${order.order_ref}:`, err);
                   }
+                }
+
+                // If fulfilled, we could store the apiSource if the column exists
+                // For now we'll just log it or add it to notification_message as a internal note
+                if (fulfilled) {
+                  updates.notification_message = `Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}`;
                 }
               }
             } catch (err) {
               console.error('Failed to auto-fulfill order:', err);
             }
           }
+
 
           // Update order status in Supabase
           const { error } = await supabase

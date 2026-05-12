@@ -142,41 +142,55 @@ export const approveManualPayment = async (req: Request, res: Response) => {
         
         if (!isNaN(packageGb)) {
           let fulfilled = false;
+          let apiSource = '';
 
           // Try MyZtaData first if enabled
           if (isMyZtaDataEnabled) {
             try {
-              // MTN network_id is typically 3, but you can adjust based on your networks table.
-              // We'll pass packageGb * 1000 since MyZtaData volume is in MB (see docs).
-              const myZtaRes = await buyOtherPackage(order.phone_number, 3, packageGb * 1000, order.order_ref);
+              const sharedBundle = packageGb * 1000;
+              console.log(`Manual Approval: Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB)`);
+              
+              const myZtaRes = await buyOtherPackage(order.phone_number, 3, sharedBundle, order.order_ref);
+              
               if (myZtaRes.success) {
                 updates.order_status = 'processing';
                 updates.api_order_id = String(myZtaRes.transaction_code);
+                apiSource = 'myztadata';
                 fulfilled = true;
+                console.log(`Manual Approval: MyZtaData successful for ${order.order_ref}`);
               }
             } catch (err: any) {
-              console.error('MyZtaData auto-fulfillment failed:', err?.response?.data || err.message);
+              console.error(`Manual Approval: MyZtaData failed for ${order.order_ref}:`, err);
             }
           }
 
-          // Fallback to GetUs if MyZtaData failed or wasn't enabled, and GetUs is enabled
+          // Fallback to GetUs
           if (!fulfilled && isGetUsEnabled) {
             try {
+              console.log(`Manual Approval: Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB`);
               const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+              
               if (getusRes.status === 'success') {
                 updates.order_status = 'processing';
                 updates.api_order_id = String(getusRes.order_id);
+                apiSource = 'getus';
                 fulfilled = true;
+                console.log(`Manual Approval: GetUs successful for ${order.order_ref}`);
               }
             } catch (err: any) {
-              console.error('GetUs auto-fulfillment failed:', err?.response?.data || err.message);
+              console.error(`Manual Approval: GetUs failed for ${order.order_ref}:`, err);
             }
+          }
+
+          if (fulfilled) {
+            updates.notification_message = `Manual Approval: Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}`;
           }
         }
       } catch (err) {
         console.error('Manual approval: Auto-fulfillment failed overall:', err);
       }
     }
+
 
     // 4. Update Database
     const { data, error } = await supabase
