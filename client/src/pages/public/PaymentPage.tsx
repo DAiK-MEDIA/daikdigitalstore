@@ -62,6 +62,7 @@ const PaymentPage = () => {
 
   const handleWhatsApp = async () => {
     try {
+      if (!order) return;
       // Mark as manual payment in backend
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order.id}/payment-method`, {
         method: 'momo'
