@@ -161,6 +161,15 @@ const AdminDashboard = () => {
     } catch { showToast('Failed to approve payment'); }
   };
 
+  const declinePayment = async (id: string) => {
+    try {
+      const headers = await getAuthHeader();
+      const { data } = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/orders/${id}/decline`, {}, { headers });
+      setOrders(prev => prev.map(o => o.id === id ? data : o));
+      showToast('Payment declined and order cancelled.');
+    } catch { showToast('Failed to decline payment'); }
+  };
+
   const sendNotification = async (orderId: string) => {
     if (!notifMsg.trim()) return;
     setNotifLoading(true);
@@ -489,13 +498,19 @@ const AdminDashboard = () => {
                             </span>
                             {/* Payment Badges */}
                             <div className="flex gap-1">
-                              {order.payment_method === 'paystack' ? (
+                              {order.payment_method === 'paystack' && (
                                 <span className="flex items-center gap-1 text-[9px] font-black bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded uppercase tracking-tighter">
                                   <CreditCard className="w-2.5 h-2.5" /> Paystack
                                 </span>
-                              ) : (
+                              )}
+                              {order.payment_method === 'momo' && (
                                 <span className="flex items-center gap-1 text-[9px] font-black bg-orange-500/10 text-orange-600 px-2 py-0.5 rounded uppercase tracking-tighter">
                                   <Smartphone className="w-2.5 h-2.5" /> Manual
+                                </span>
+                              )}
+                              {!order.payment_method && (
+                                <span className="flex items-center gap-1 text-[9px] font-black bg-surface-container text-on-surface-variant px-2 py-0.5 rounded uppercase tracking-tighter">
+                                  No Selection
                                 </span>
                               )}
                               {order.payment_status === 'paid' ? (
@@ -559,14 +574,23 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          {order.payment_status !== 'paid' && (
-                            <button
-                              onClick={() => approvePayment(order.id)}
-                              className="w-12 h-12 rounded-xl flex items-center justify-center bg-success text-white shadow-lg hover:shadow-success/20 hover:scale-105 transition-all"
-                              title="Approve Payment"
-                            >
-                              <Check className="w-5 h-5" />
-                            </button>
+                          {order.payment_status !== 'paid' && order.order_status !== 'cancelled' && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => approvePayment(order.id)}
+                                className="w-12 h-12 rounded-xl flex items-center justify-center bg-success text-white shadow-lg hover:shadow-success/20 hover:scale-105 transition-all"
+                                title="Approve Payment"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => declinePayment(order.id)}
+                                className="w-12 h-12 rounded-xl flex items-center justify-center bg-error text-white shadow-lg hover:shadow-error/20 hover:scale-105 transition-all"
+                                title="Decline Payment"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
                           )}
                           <div className="flex gap-2">
                             <button
@@ -720,16 +744,29 @@ const AdminDashboard = () => {
                 <h3 className="font-bold text-navy flex items-center gap-2">
                   <Server className="w-4 h-4 text-navy" /> API Integrations
                 </h3>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <div className={cn('w-11 h-6 rounded-full transition-colors relative', settings.auto_fulfill_api === 'true' ? 'bg-navy' : 'bg-surface-container')}>
-                    <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all', settings.auto_fulfill_api === 'true' ? 'left-6' : 'left-1')} />
-                    <input type="checkbox" className="sr-only" checked={settings.auto_fulfill_api === 'true'} onChange={(e) => setSettings({ ...settings, auto_fulfill_api: e.target.checked.toString() })} />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-sm font-bold text-navy block">Auto-Fulfillment API (GetUs)</span>
-                    <span className="text-xs text-on-surface-variant block">Automatically send data via API when customers pay.</span>
-                  </div>
-                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-surface-highest bg-surface-container/30 hover:bg-surface-container transition-colors">
+                    <div className={cn('w-11 h-6 shrink-0 rounded-full transition-colors relative', settings.auto_fulfill_api === 'true' ? 'bg-navy' : 'bg-surface-highest')}>
+                      <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all', settings.auto_fulfill_api === 'true' ? 'left-6' : 'left-1')} />
+                      <input type="checkbox" className="sr-only" checked={settings.auto_fulfill_api === 'true'} onChange={(e) => setSettings({ ...settings, auto_fulfill_api: e.target.checked.toString() })} />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-navy block">GetUs API</span>
+                      <span className="text-xs text-on-surface-variant block leading-snug">Auto-fulfill via GetUs when paid.</span>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-surface-highest bg-surface-container/30 hover:bg-surface-container transition-colors">
+                    <div className={cn('w-11 h-6 shrink-0 rounded-full transition-colors relative', settings.auto_fulfill_api_myztadata === 'true' ? 'bg-navy' : 'bg-surface-highest')}>
+                      <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all', settings.auto_fulfill_api_myztadata === 'true' ? 'left-6' : 'left-1')} />
+                      <input type="checkbox" className="sr-only" checked={settings.auto_fulfill_api_myztadata === 'true'} onChange={(e) => setSettings({ ...settings, auto_fulfill_api_myztadata: e.target.checked.toString() })} />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-navy block">MyZtaData API</span>
+                      <span className="text-xs text-on-surface-variant block leading-snug">Auto-fulfill via MyZtaData when paid.</span>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               {/* General Settings */}

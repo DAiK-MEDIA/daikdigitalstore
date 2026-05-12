@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { generateUniqueOrderRef } from '../utils/orderRef';
 import { placeDataOrder } from '../services/getusApi';
+import { buyOtherPackage } from '../services/myztadataApi';
 
 // --- Orders ---
 
@@ -124,31 +125,57 @@ export const approveManualPayment = async (req: Request, res: Response) => {
     // 3. Check if Auto-Fulfillment is enabled
     const { data: settings } = await supabase
       .from('admin_settings')
-      .select('value')
-      .eq('key', 'auto_fulfill_api')
-      .single();
+      .select('key, value')
+      .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata']);
       
-    const isApiEnabled = settings?.value === 'true';
+    const settingsMap = settings?.reduce((acc: any, curr) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {}) || {};
 
-    if (isApiEnabled && order.data_plans?.size_label) {
+    const isGetUsEnabled = settingsMap['auto_fulfill_api'] === 'true';
+    const isMyZtaDataEnabled = settingsMap['auto_fulfill_api_myztadata'] === 'true';
+
+    if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans?.size_label) {
       try {
-        // Extract numeric GB from size_label (e.g. '1GB' -> 1)
         const packageGb = parseFloat(order.data_plans.size_label);
         
         if (!isNaN(packageGb)) {
-          const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
-          
-          if (getusRes.status === 'success') {
-            updates.order_status = 'processing';
-            updates.api_order_id = String(getusRes.order_id);
+          let fulfilled = false;
+
+          // Try MyZtaData first if enabled
+          if (isMyZtaDataEnabled) {
+            try {
+              // MTN network_id is typically 3, but you can adjust based on your networks table.
+              // We'll pass packageGb * 1000 since MyZtaData volume is in MB (see docs).
+              const myZtaRes = await buyOtherPackage(order.phone_number, 3, packageGb * 1000, order.order_ref);
+              if (myZtaRes.success) {
+                updates.order_status = 'processing';
+                updates.api_order_id = String(myZtaRes.transaction_code);
+                fulfilled = true;
+              }
+            } catch (err: any) {
+              console.error('MyZtaData auto-fulfillment failed:', err?.response?.data || err.message);
+            }
+          }
+
+          // Fallback to GetUs if MyZtaData failed or wasn't enabled, and GetUs is enabled
+          if (!fulfilled && isGetUsEnabled) {
+            try {
+              const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+              if (getusRes.status === 'success') {
+                updates.order_status = 'processing';
+                updates.api_order_id = String(getusRes.order_id);
+                fulfilled = true;
+              }
+            } catch (err: any) {
+              console.error('GetUs auto-fulfillment failed:', err?.response?.data || err.message);
+            }
           }
         }
       } catch (err) {
-        console.error('Manual approval: Auto-fulfillment failed:', err);
-        // We still mark as paid, but order_status stays 'pending' for manual retry
+        console.error('Manual approval: Auto-fulfillment failed overall:', err);
       }
-    } else {
-      // If API not enabled, just mark as paid. Admin can manually update order_status later.
     }
 
     // 4. Update Database
@@ -164,6 +191,29 @@ export const approveManualPayment = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error approving payment:', error);
     res.status(500).json({ error: 'Failed to approve payment' });
+  }
+};
+
+export const declineManualPayment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update({
+        payment_status: 'failed',
+        order_status: 'cancelled',
+        notification_message: 'Your payment was declined. Please contact support.'
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error declining payment:', error);
+    res.status(500).json({ error: 'Failed to decline payment' });
   }
 };
 

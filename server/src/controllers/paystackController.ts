@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { initializeTransaction, verifyTransaction } from '../services/paystack';
 import { placeDataOrder } from '../services/getusApi';
+import { buyOtherPackage } from '../services/myztadataApi';
 import crypto from 'crypto';
 
 export const initPayment = async (req: Request, res: Response) => {
@@ -56,37 +57,60 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           .single();
 
         if (order) {
-          // Check API Switch state
+          // Check API Switch states
           const { data: settings } = await supabase
             .from('admin_settings')
-            .select('value')
-            .eq('key', 'auto_fulfill_api')
-            .single();
+            .select('key, value')
+            .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata']);
             
-          const isApiEnabled = settings?.value === 'true';
+          const settingsMap = settings?.reduce((acc: any, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {}) || {};
+
+          const isGetUsEnabled = settingsMap['auto_fulfill_api'] === 'true';
+          const isMyZtaDataEnabled = settingsMap['auto_fulfill_api_myztadata'] === 'true';
 
           let updates: any = {
             payment_status: 'paid',
             payment_method: 'paystack'
           };
 
-          if (isApiEnabled && order.data_plans?.size_label) {
+          if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans?.size_label) {
             try {
-              // Extract numeric GB from size_label (e.g. '1GB' -> 1)
               const packageGb = parseFloat(order.data_plans.size_label);
               
               if (!isNaN(packageGb)) {
-                // Assuming all orders are MTN based on your requirement
-                const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
-                
-                if (getusRes.status === 'success') {
-                  updates.order_status = 'processing';
-                  updates.api_order_id = String(getusRes.order_id);
+                let fulfilled = false;
+
+                if (isMyZtaDataEnabled) {
+                  try {
+                    const myZtaRes = await buyOtherPackage(order.phone_number, 3, packageGb * 1000, order.order_ref);
+                    if (myZtaRes.success) {
+                      updates.order_status = 'processing';
+                      updates.api_order_id = String(myZtaRes.transaction_code);
+                      fulfilled = true;
+                    }
+                  } catch (err: any) {
+                    console.error('Paystack webhook: MyZtaData auto-fulfillment failed:', err?.response?.data || err.message);
+                  }
+                }
+
+                if (!fulfilled && isGetUsEnabled) {
+                  try {
+                    const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+                    if (getusRes.status === 'success') {
+                      updates.order_status = 'processing';
+                      updates.api_order_id = String(getusRes.order_id);
+                      fulfilled = true;
+                    }
+                  } catch (err: any) {
+                    console.error('Paystack webhook: GetUs auto-fulfillment failed:', err?.response?.data || err.message);
+                  }
                 }
               }
             } catch (err) {
-              console.error('Failed to auto-fulfill order via GetUs API:', err);
-              // Fallback to manual mode (keeps order_status as 'pending' or whatever it was)
+              console.error('Failed to auto-fulfill order:', err);
             }
           }
 

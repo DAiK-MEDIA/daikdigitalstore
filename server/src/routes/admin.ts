@@ -6,6 +6,7 @@ import {
   createManualOrder,
   deleteOrder,
   approveManualPayment,
+  declineManualPayment,
   managePlans,
   getSettings,
   updateSettings
@@ -22,6 +23,7 @@ router.get('/orders', getAllOrders);
 router.patch('/orders/:id/status', updateOrderStatus);
 router.patch('/orders/:id/notification', updateOrderNotification);
 router.patch('/orders/:id/approve', approveManualPayment);
+router.patch('/orders/:id/decline', declineManualPayment);
 router.post('/orders/manual', createManualOrder);
 router.delete('/orders/:id', deleteOrder);
 

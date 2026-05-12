@@ -36,7 +36,7 @@ app.use(express.json());
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'DataHub API Server is running',
     version: '1.0.0',
     endpoints: {
@@ -73,7 +73,7 @@ app.get('/status/:ref', (req, res) => {
 const startServer = async () => {
 
   app.listen(PORT, () => {
-    console.log(`DataHub Server running on port ${PORT}`);
+    console.log(`✅ DataHub Server running on port ${PORT}`);
   });
 };
 
