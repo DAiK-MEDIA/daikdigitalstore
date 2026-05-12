@@ -10,7 +10,7 @@ import {
   LayoutDashboard, ShoppingBag, Settings as SettingsIcon,
   Plus, RefreshCw, Edit3, Trash2, Megaphone, Hash, ShieldCheck,
   LogOut, MessageSquare, X, TrendingUp, Clock, CheckCircle2, PackagePlus,
-  AlertTriangle, Server, CreditCard, Smartphone, Check
+  AlertTriangle, Server, CreditCard, Smartphone, Check, ChevronDown
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -520,10 +520,10 @@ const AdminDashboard = () => {
                       </div>
 
                       {/* Main Body: Info Grid */}
-                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-center">
+                      <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 items-center">
                         
                         {/* Customer Info */}
-                        <div className="space-y-1.5 min-w-0">
+                        <div className="lg:col-span-3 space-y-1.5 min-w-0">
                           <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em]">Customer</p>
                           <h4 className="text-lg font-black text-navy leading-tight truncate" title={order.full_name}>
                             {order.full_name}
@@ -534,7 +534,7 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* Recipient */}
-                        <div className="space-y-1.5 min-w-0">
+                        <div className="lg:col-span-3 space-y-1.5 min-w-0">
                           <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em]">Recipient</p>
                           <div 
                             onClick={() => copyToClipboard(order.phone_number)}
@@ -546,12 +546,12 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* Product/Plan */}
-                        <div className="lg:col-span-1">
+                        <div className="lg:col-span-3">
                           <div className="bg-gradient-to-br from-navy to-navy/80 p-4 rounded-2xl shadow-lg relative overflow-hidden group/plan">
                             <div className="absolute -right-4 -top-4 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover/plan:scale-150 transition-transform duration-700" />
                             <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">Bundle & Amount</p>
-                            <div className="flex items-baseline justify-between gap-2">
-                              <span className="text-lg font-black text-white truncate" title={order.data_plans?.size_label}>
+                            <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                              <span className="text-lg font-black text-white whitespace-nowrap" title={order.data_plans?.size_label}>
                                 {order.data_plans?.size_label}
                               </span>
                               <span className="text-yellow font-black text-sm whitespace-nowrap">GHS {order.amount_paid}</span>
@@ -560,28 +560,31 @@ const AdminDashboard = () => {
                         </div>
 
                         {/* Status & Quick Actions */}
-                        <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center gap-4">
+                        <div className="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center gap-3 w-full">
                           <div className="w-full relative group/status">
                             <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] mb-2 ml-1">Order Status</p>
-                            <select
-                              value={order.order_status}
-                              onChange={(e) => updateStatus(order.id, e.target.value)}
-                              className={cn(
-                                "w-full appearance-none px-5 py-3 rounded-full text-[11px] font-black uppercase tracking-[0.1em] border-2 transition-all cursor-pointer shadow-sm text-center",
-                                order.order_status === 'pending' && "bg-pending/10 text-secondary border-pending/30 focus:border-pending hover:bg-pending/20",
-                                order.order_status === 'processing' && "bg-blue-50 text-blue-700 border-blue-200 focus:border-blue-400 hover:bg-blue-100",
-                                order.order_status === 'delivered' && "bg-success/10 text-success border-success/30 focus:border-success hover:bg-success/20",
-                                order.order_status === 'cancelled' && "bg-error/10 text-error border-error/30 focus:border-error hover:bg-error/20"
-                              )}
-                            >
-                              <option value="pending">PENDING</option>
-                              <option value="processing">PROCESSING</option>
-                              <option value="delivered">DELIVERED</option>
-                              <option value="cancelled">CANCELLED</option>
-                            </select>
+                            <div className="relative">
+                              <select
+                                value={order.order_status}
+                                onChange={(e) => updateStatus(order.id, e.target.value)}
+                                className={cn(
+                                  "w-full appearance-none pl-5 pr-10 py-3 rounded-full text-[11px] font-black uppercase tracking-[0.05em] border-2 transition-all cursor-pointer shadow-sm bg-white",
+                                  order.order_status === 'pending' && "bg-pending/10 text-secondary border-pending/30 focus:border-pending hover:bg-pending/20",
+                                  order.order_status === 'processing' && "bg-blue-50 text-blue-700 border-blue-200 focus:border-blue-400 hover:bg-blue-100",
+                                  order.order_status === 'delivered' && "bg-success/10 text-success border-success/30 focus:border-success hover:bg-success/20",
+                                  order.order_status === 'cancelled' && "bg-error/10 text-error border-error/30 focus:border-error hover:bg-error/20"
+                                )}
+                              >
+                                <option value="pending">PENDING</option>
+                                <option value="processing">PROCESSING</option>
+                                <option value="delivered">DELIVERED</option>
+                                <option value="cancelled">CANCELLED</option>
+                              </select>
+                              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none opacity-50" />
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 self-end lg:self-center xl:self-end pt-5 lg:pt-0">
+                          <div className="flex items-center gap-2 self-end lg:self-center xl:self-end pt-5 lg:pt-0 shrink-0">
                             {order.payment_status !== 'paid' && order.order_status !== 'cancelled' && (
                               <>
                                 <button
