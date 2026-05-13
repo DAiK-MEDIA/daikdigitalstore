@@ -119,7 +119,7 @@ export const approveManualPayment = async (req: Request, res: Response) => {
     // 2. Prepare updates
     let updates: any = {
       payment_status: 'paid',
-      payment_method: 'momo'
+      payment_method: order.payment_method === 'paystack' ? 'paystack' : 'momo'
     };
 
     // 3. Check if Auto-Fulfillment is enabled

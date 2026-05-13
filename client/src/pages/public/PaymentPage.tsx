@@ -49,6 +49,11 @@ const PaymentPage = () => {
     setIsLoading(true);
     setError('');
     try {
+      if (order) {
+        await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order.id}/payment-method`, {
+          method: 'paystack'
+        });
+      }
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/paystack/initialize/${orderId}`, {
         email: 'customer@example.com' // Placeholder
       });
