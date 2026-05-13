@@ -4,7 +4,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../services/supabase';
-import { ArrowRight, ShieldCheck, Zap, Globe, Clock, CreditCard, Sparkles } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Globe, Clock, CreditCard, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../utils/cn';
 
@@ -80,7 +80,7 @@ const LandingPage = () => {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-yellow text-sm font-bold backdrop-blur-md"
           >
             <Sparkles className="w-4 h-4" />
-            Most Reliable Data Provider in Ghana
+            Important Service Information
           </motion.div>
 
           <motion.h1 
@@ -89,9 +89,9 @@ const LandingPage = () => {
             transition={{ delay: 0.2 }}
             className="text-5xl md:text-7xl font-black text-white leading-[1.1] tracking-tight"
           >
-            Unlimited Connectivity. <br />
+            Premium Data Bundles & <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow to-yellow/60">
-              Unbeatable Prices.
+              AFA Registration Services
             </span>
           </motion.h1>
 
@@ -101,27 +101,30 @@ const LandingPage = () => {
             transition={{ delay: 0.4 }}
             className="text-xl text-white/70 max-w-2xl mx-auto leading-relaxed"
           >
-            Experience lightning-fast data activation and premium support. 
-            Join thousands of satisfied users getting more for less.
+            Access high-speed MTN and Telecel data bundles at competitive rates. 
+            We provide reliable connectivity for your personal and business needs.
           </motion.p>
           
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex flex-wrap justify-center gap-8 pt-4"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-8"
           >
-            <div className="flex items-center gap-3 text-white/90">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5 text-yellow" />
-              </div>
-              <span className="font-bold">Instant Activation</span>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm text-left">
+              <Clock className="w-5 h-5 text-yellow mb-2" />
+              <h4 className="text-white font-bold text-sm">Fulfillment</h4>
+              <p className="text-white/60 text-xs">Orders outside business hours are processed next session.</p>
             </div>
-            <div className="flex items-center gap-3 text-white/90">
-              <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-yellow" />
-              </div>
-              <span className="font-bold">Secure Transactions</span>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm text-left">
+              <ShieldCheck className="w-5 h-5 text-yellow mb-2" />
+              <h4 className="text-white font-bold text-sm">SIM Compatibility</h4>
+              <p className="text-white/60 text-xs">Excludes Turbonet, Broadband, Merchant, & Ported SIMs.</p>
+            </div>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm text-left">
+              <CreditCard className="w-5 h-5 text-yellow mb-2" />
+              <h4 className="text-white font-bold text-sm">Account Status</h4>
+              <p className="text-white/60 text-xs">Outstanding balances must be settled prior to purchase.</p>
             </div>
           </motion.div>
         </div>
