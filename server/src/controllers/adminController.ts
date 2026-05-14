@@ -15,13 +15,9 @@ export const getAllOrders = async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    // Filter out abandoned checkouts and unpaid Paystack orders
-    // Only show fully paid orders or manual MoMo orders that need verification
-    const filteredOrders = data.filter(order => 
-      order.payment_status === 'paid' || order.payment_method === 'momo'
-    );
-
-    res.json(filteredOrders);
+    // Return all orders — the admin dashboard UI handles status display via badges.
+    // Filtering here would hide Paystack orders if the webhook is delayed or fails.
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
