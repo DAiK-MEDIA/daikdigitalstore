@@ -8,9 +8,7 @@ import crypto from 'crypto';
 export const initPayment = async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;
-    // req.body may be a raw Buffer due to express.raw() middleware on the /api/paystack prefix
-    const bodyData = req.body instanceof Buffer ? JSON.parse(req.body.toString()) : req.body;
-    const { email } = bodyData; // Paystack requires an email
+
 
     const { data: order, error } = await supabase
       .from('orders')
@@ -22,13 +20,15 @@ export const initPayment = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    // Ensure amount_paid is treated as a number to prevent string concatenation
+    const baseAmount = Number(order.amount_paid);
     // Add Paystack fee (1.95%) so the merchant receives the exact amount
-    const fee = order.amount_paid * 0.0195;
-    const totalAmount = order.amount_paid + fee;
+    const fee = baseAmount * 0.0195;
+    const totalAmount = baseAmount + fee;
     const uniqueReference = `${order.order_ref}_${Date.now()}`;
 
     const paystackData = await initializeTransaction(
-      email || 'customer@example.com', // Fallback if no email
+      'noreply@yourdomain.com',
       totalAmount,
       uniqueReference
     );
@@ -53,12 +53,12 @@ export const paystackWebhook = async (req: Request, res: Response) => {
     if (hash === req.headers['x-paystack-signature']) {
       // Parse the raw buffer into a JSON event object
       const event = JSON.parse(rawBody.toString());
-      
+
       if (event.event === 'charge.success') {
         const fullReference = event.data.reference;
         const reference = fullReference.split('_')[0]; // Extract the original order_ref
         console.log(`[Paystack Webhook] charge.success for ref: ${fullReference} → order_ref: ${reference}`);
-        
+
         // Fetch order details
         const { data: order } = await supabase
           .from('orders')
@@ -73,7 +73,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             .from('admin_settings')
             .select('key, value')
             .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata']);
-            
+
           const settingsMap = settings?.reduce((acc: any, curr) => {
             acc[curr.key] = curr.value;
             return acc;
@@ -90,7 +90,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans?.size_label) {
             try {
               const packageGb = parseFloat(order.data_plans.size_label);
-              
+
               if (!isNaN(packageGb)) {
                 let fulfilled = false;
                 let apiSource = '';
@@ -101,9 +101,9 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                     // MyZtaData volume is display_volume * 1000 for MTN (ID 3)
                     const sharedBundle = packageGb * 1000;
                     console.log(`Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB)`);
-                    
+
                     const myZtaRes = await buyOtherPackage(order.phone_number, 3, sharedBundle, order.order_ref);
-                    
+
                     if (myZtaRes.success) {
                       updates.order_status = 'processing';
                       updates.api_order_id = String(myZtaRes.transaction_code);
@@ -121,7 +121,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                   try {
                     console.log(`Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB`);
                     const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
-                    
+
                     if (getusRes.status === 'success') {
                       updates.order_status = 'processing';
                       updates.api_order_id = String(getusRes.order_id);

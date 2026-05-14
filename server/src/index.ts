@@ -3,6 +3,11 @@ import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import paystackRoutes from './routes/paystack';
+import planRoutes from './routes/plans';
+import orderRoutes from './routes/orders';
+import adminRoutes from './routes/admin';
+import agentRoutes from './routes/agent';
 
 dotenv.config();
 
@@ -33,12 +38,15 @@ app.use(cors({
 app.options('*', cors());
 app.use(morgan('dev'));
 
-// ⚠️ IMPORTANT: The Paystack webhook MUST be registered BEFORE express.json()
-// because signature verification requires the raw, unparsed request body.
-// express.json() re-serializes the body via JSON.stringify which can differ
-// from the original bytes Paystack signed.
-import paystackRoutes from './routes/paystack';
-app.use('/api/paystack', express.raw({ type: 'application/json' }), paystackRoutes);
+// ⚠️ IMPORTANT: Only the Paystack webhook needs raw body for HMAC verification.
+// Strategy:
+//   1. Apply express.raw() ONLY to /api/paystack/webhook (before express.json)
+//      so the Buffer is preserved for crypto.createHmac signature checking.
+//   2. Register express.json() globally — body-parser skips already-parsed bodies,
+//      so the webhook body stays as a Buffer; all other routes get JSON parsing.
+//   3. Mount paystackRoutes once AFTER express.json() so /initialize/:orderId
+//      gets a proper parsed req.body object.
+app.use('/api/paystack/webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json());
 
@@ -59,16 +67,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-import planRoutes from './routes/plans';
-import orderRoutes from './routes/orders';
-import adminRoutes from './routes/admin';
-import agentRoutes from './routes/agent';
 
+
+app.use('/api/paystack', paystackRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/agent', agentRoutes);
-// Note: /api/paystack is already registered above express.json() for raw body access
 
 // Fallback: Redirect any other GET requests to the frontend status page if it looks like a status route
 app.get('/status/:ref', (req, res) => {
