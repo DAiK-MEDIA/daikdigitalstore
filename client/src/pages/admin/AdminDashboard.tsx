@@ -136,7 +136,11 @@ const AdminDashboard = () => {
     finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // re-fetch every 30s
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
 
   // Stats
   const totalRevenue = orders.reduce((s, o) => s + Number(o.amount_paid), 0);
