@@ -32,6 +32,14 @@ app.use(cors({
 // Explicitly handle preflight for all routes
 app.options('*', cors());
 app.use(morgan('dev'));
+
+// ⚠️ IMPORTANT: The Paystack webhook MUST be registered BEFORE express.json()
+// because signature verification requires the raw, unparsed request body.
+// express.json() re-serializes the body via JSON.stringify which can differ
+// from the original bytes Paystack signed.
+import paystackRoutes from './routes/paystack';
+app.use('/api/paystack', express.raw({ type: 'application/json' }), paystackRoutes);
+
 app.use(express.json());
 
 // Routes
@@ -55,14 +63,12 @@ import planRoutes from './routes/plans';
 import orderRoutes from './routes/orders';
 import adminRoutes from './routes/admin';
 import agentRoutes from './routes/agent';
-import paystackRoutes from './routes/paystack';
-
 
 app.use('/api/plans', planRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/agent', agentRoutes);
-app.use('/api/paystack', paystackRoutes);
+// Note: /api/paystack is already registered above express.json() for raw body access
 
 // Fallback: Redirect any other GET requests to the frontend status page if it looks like a status route
 app.get('/status/:ref', (req, res) => {

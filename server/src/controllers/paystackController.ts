@@ -8,7 +8,9 @@ import crypto from 'crypto';
 export const initPayment = async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;
-    const { email } = req.body; // Paystack requires an email
+    // req.body may be a raw Buffer due to express.raw() middleware on the /api/paystack prefix
+    const bodyData = req.body instanceof Buffer ? JSON.parse(req.body.toString()) : req.body;
+    const { email } = bodyData; // Paystack requires an email
 
     const { data: order, error } = await supabase
       .from('orders')
@@ -40,14 +42,22 @@ export const initPayment = async (req: Request, res: Response) => {
 export const paystackWebhook = async (req: Request, res: Response) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY || '';
-    const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
+
+    // req.body is a raw Buffer (express.raw middleware) — use it directly for HMAC
+    // This ensures the signature matches exactly what Paystack signed
+    const rawBody = req.body instanceof Buffer ? req.body : Buffer.from(JSON.stringify(req.body));
+    const hash = crypto.createHmac('sha512', secret).update(rawBody).digest('hex');
+
+    console.log(`[Paystack Webhook] Received. Sig match: ${hash === req.headers['x-paystack-signature']}`);
 
     if (hash === req.headers['x-paystack-signature']) {
-      const event = req.body;
+      // Parse the raw buffer into a JSON event object
+      const event = JSON.parse(rawBody.toString());
       
       if (event.event === 'charge.success') {
         const fullReference = event.data.reference;
         const reference = fullReference.split('_')[0]; // Extract the original order_ref
+        console.log(`[Paystack Webhook] charge.success for ref: ${fullReference} → order_ref: ${reference}`);
         
         // Fetch order details
         const { data: order } = await supabase
@@ -57,6 +67,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           .single();
 
         if (order) {
+          console.log(`[Paystack Webhook] Order found: ${order.id}. Updating to paid...`);
           // Check API Switch states
           const { data: settings } = await supabase
             .from('admin_settings')
