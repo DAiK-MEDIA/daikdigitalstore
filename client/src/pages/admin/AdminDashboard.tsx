@@ -501,7 +501,7 @@ const AdminDashboard = () => {
                             {order.payment_method === 'paystack' ? (
                               <><CreditCard className="w-3 h-3 text-blue-500" /><span className="text-[9px] font-black uppercase text-blue-600">Paystack</span></>
                             ) : order.payment_method === 'momo' ? (
-                              <><Smartphone className="w-3 h-3 text-orange-500" /><span className="text-[9px] font-black uppercase text-orange-600">Manual MoMo</span></>
+                              <><Smartphone className="w-3 h-3 text-orange-500" /><span className="text-[9px] font-black uppercase text-orange-600">Manual Payment User</span></>
                             ) : (
                               <span className="text-[9px] font-black uppercase text-on-surface-variant/40">No Method</span>
                             )}
@@ -512,9 +512,11 @@ const AdminDashboard = () => {
                             "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm",
                             order.payment_status === 'paid' 
                               ? "bg-success/10 text-success border border-success/20" 
-                              : "bg-error/10 text-error border border-error/20 animate-pulse"
+                              : order.payment_method === 'momo'
+                                ? "bg-pending/10 text-pending border border-pending/20 animate-pulse"
+                                : "bg-error/10 text-error border border-error/20 animate-pulse"
                           )}>
-                            {order.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+                            {order.payment_status === 'paid' ? 'Paid' : order.payment_method === 'momo' ? 'Verify Payment' : 'Unpaid'}
                           </div>
                         </div>
                       </div>

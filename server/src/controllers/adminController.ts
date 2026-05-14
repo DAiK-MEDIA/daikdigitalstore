@@ -14,7 +14,14 @@ export const getAllOrders = async (req: Request, res: Response) => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    res.json(data);
+
+    // Filter out abandoned checkouts and unpaid Paystack orders
+    // Only show fully paid orders or manual MoMo orders that need verification
+    const filteredOrders = data.filter(order => 
+      order.payment_status === 'paid' || order.payment_method === 'momo'
+    );
+
+    res.json(filteredOrders);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
