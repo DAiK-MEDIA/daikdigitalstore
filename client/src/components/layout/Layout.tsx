@@ -55,14 +55,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             exit={{ height: 0, opacity: 0 }}
             className="bg-yellow text-navy py-2.5 px-4 overflow-hidden relative"
           >
-            <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 pr-8">
-              <Info className="w-4 h-4 shrink-0" />
-              <p className="text-sm font-bold text-center leading-tight">
-                {broadcast.message}
-              </p>
+            <div className="max-w-7xl mx-auto flex items-center px-4 pr-10 overflow-hidden relative">
+              <div className="shrink-0 z-10 bg-yellow pr-3 py-1 flex items-center absolute left-4">
+                <Info className="w-4 h-4" />
+              </div>
+              <div className="flex-1 overflow-hidden whitespace-nowrap pl-6">
+                <p className="text-sm font-bold leading-tight inline-block animate-[marquee_20s_linear_infinite] will-change-transform">
+                  {broadcast.message}
+                </p>
+              </div>
               <button 
                 onClick={() => setShowBanner(false)}
-                className="absolute right-4 p-1 hover:bg-black/10 rounded-full transition-colors"
+                className="absolute right-4 p-1 hover:bg-black/10 rounded-full transition-colors z-10 bg-yellow"
               >
                 <X className="w-4 h-4" />
               </button>

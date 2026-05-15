@@ -566,7 +566,7 @@ const AdminDashboard = () => {
                           </div>
 
                           {/* Status & Quick Actions */}
-                          <div className="lg:col-span-3 flex flex-col sm:flex-row lg:flex-col xl:flex-row items-center gap-3 w-full">
+                          <div className="lg:col-span-3 flex flex-col gap-3 w-full">
                             <div className="w-full relative group/status">
                               <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] mb-2 ml-1">Order Status</p>
                               <div className="relative">
@@ -590,7 +590,7 @@ const AdminDashboard = () => {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 self-end lg:self-center xl:self-end pt-5 lg:pt-0 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0 flex-wrap">
                               {order.payment_status !== 'paid' && order.order_status !== 'cancelled' && (
                                 <>
                                   <button
