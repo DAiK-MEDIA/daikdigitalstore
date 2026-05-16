@@ -81,18 +81,19 @@ const PaymentPage = () => {
   };
 
   const handleWhatsApp = async () => {
+    const currentOrder = order;
+    if (!currentOrder) return;
     try {
-      if (!order) return;
-      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order.id}/payment-method`, {
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${currentOrder.id}/payment-method`, {
         method: 'momo'
       });
 
-      const message = `Hello, I want to make a MoMo payment for Order ID: ${order.order_ref}. Plan: ${order.data_plans?.size_label}. Amount: GHS ${order.amount_paid}. Phone: ${order.phone_number}. Please guide me on how to proceed.`;
+      const message = `Hello, I want to make a MoMo payment for Order ID: ${currentOrder.order_ref}. Plan: ${currentOrder.data_plans?.size_label ?? 'N/A'}. Amount: GHS ${currentOrder.amount_paid}. Phone: ${currentOrder.phone_number}. Please guide me on how to proceed.`;
       const whatsappUrl = buildWhatsAppUrl(settings?.whatsapp_link, settings?.momo_number, message);
       window.open(whatsappUrl, '_blank');
     } catch (err) {
       console.error('Failed to update payment method:', err);
-      const message = `Hello, I want to make a MoMo payment for Order ID: ${order.order_ref}. Plan: ${order.data_plans?.size_label}. Amount: GHS ${order.amount_paid}. Phone: ${order.phone_number}. Please guide me on how to proceed.`;
+      const message = `Hello, I want to make a MoMo payment for Order ID: ${currentOrder.order_ref}. Plan: ${currentOrder.data_plans?.size_label ?? 'N/A'}. Amount: GHS ${currentOrder.amount_paid}. Phone: ${currentOrder.phone_number}. Please guide me on how to proceed.`;
       const whatsappUrl = buildWhatsAppUrl(settings?.whatsapp_link, settings?.momo_number, message);
       window.open(whatsappUrl, '_blank');
     }

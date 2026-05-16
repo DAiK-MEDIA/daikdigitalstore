@@ -8,7 +8,6 @@ import { ArrowRight, Star, TrendingDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../utils/cn';
 import Badge from '../../components/ui/Badge';
-import { safeArray } from '../../utils/api';
 
 interface Plan {
   id: string;
@@ -46,7 +45,8 @@ const AgentPlans = () => {
 
     fetchPlans();
 
-    const subscription = supabase
+    const client = supabase as any;
+    const subscription = client
       .channel('public:agent_data_plans')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'data_plans' }, () => {
         fetchPlans();
@@ -54,7 +54,7 @@ const AgentPlans = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      client.removeChannel(subscription);
     };
   }, [navigate]);
 

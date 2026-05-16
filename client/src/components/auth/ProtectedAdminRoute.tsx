@@ -7,11 +7,14 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
   const [status, setStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const authClient = (supabase as any).auth;
+
+    authClient.getSession().then(({ data }: any) => {
+      const session = data?.session;
       setStatus(session ? 'authenticated' : 'unauthenticated');
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = authClient.onAuthStateChange((_event: any, session: any) => {
       setStatus(session ? 'authenticated' : 'unauthenticated');
     });
 

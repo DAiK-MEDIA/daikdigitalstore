@@ -32,12 +32,14 @@ const createMockSupabase = () => {
   };
 };
 
-export const supabase = !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : createMockSupabase();
+let supabase: any;
 
 if (!isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
   console.log('Supabase client initialized.');
 } else {
+  supabase = createMockSupabase();
   console.warn('Supabase credentials missing or invalid. Using local mock client for development.');
 }
+
+export { supabase };

@@ -18,11 +18,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           .in('key', ['broadcast_message', 'broadcast_active', 'whatsapp_link']);
 
         if (!error && data) {
-          const message = data.find(s => s.key === 'broadcast_message')?.value || '';
-          const activeValue = data.find(s => s.key === 'broadcast_active')?.value;
-          const active = activeValue === 'true' || activeValue === true;
-          const waLink = data.find(s => s.key === 'whatsapp_link')?.value || '';
-          
+          const settings = data as Array<{ key: string; value: string }>;
+          const message = settings.find((s) => s.key === 'broadcast_message')?.value || '';
+          const activeValue = settings.find((s) => s.key === 'broadcast_active')?.value;
+          const active = activeValue === 'true';
+          const waLink = settings.find((s) => s.key === 'whatsapp_link')?.value || '';
+
           setBroadcast({ message, active });
           setWhatsapp(waLink);
         }
@@ -49,7 +50,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen flex flex-col bg-surface font-inter">
       <AnimatePresence>
         {broadcast?.active && showBanner && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -64,7 +65,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   {broadcast.message}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowBanner(false)}
                 className="absolute right-4 p-1 hover:bg-black/10 rounded-full transition-colors z-10 bg-yellow"
               >
@@ -76,7 +77,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </AnimatePresence>
 
       <Navbar />
-      
+
       <main className="flex-grow">
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           {children}
@@ -98,10 +99,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
       {/* Floating WhatsApp Support Icon */}
       {whatsapp && (
-        <a 
-          href={whatsapp} 
-          target="_blank" 
-          rel="noopener noreferrer" 
+        <a
+          href={whatsapp}
+          target="_blank"
+          rel="noopener noreferrer"
           className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 hover:-translate-y-1 transition-all group flex items-center justify-center"
           aria-label="WhatsApp Support"
         >

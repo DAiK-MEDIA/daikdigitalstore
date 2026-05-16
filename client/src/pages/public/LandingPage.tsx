@@ -7,7 +7,6 @@ import { supabase } from '../../services/supabase';
 import { ArrowRight, ShieldCheck, Globe, Clock, CreditCard, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../utils/cn';
-import { safeArray } from '../../utils/api';
 
 interface Plan {
   id: string;
@@ -39,7 +38,8 @@ const LandingPage = () => {
 
     fetchPlans();
 
-    const subscription = supabase
+    const client = supabase as any;
+    const subscription = client
       .channel('public:data_plans')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'data_plans' }, () => {
         fetchPlans();
@@ -47,7 +47,7 @@ const LandingPage = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      client.removeChannel(subscription);
     };
   }, []);
 

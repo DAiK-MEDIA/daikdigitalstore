@@ -8,6 +8,7 @@ import planRoutes from './routes/plans';
 import orderRoutes from './routes/orders';
 import adminRoutes from './routes/admin';
 import agentRoutes from './routes/agent';
+import { validateEnv } from './utils/validateEnv';
 
 dotenv.config();
 
@@ -82,6 +83,11 @@ app.get('/status/:ref', (req, res) => {
 });
 
 const startServer = async () => {
+  const { missing, placeholder } = validateEnv();
+
+  if (missing.length || placeholder.length) {
+    console.error('❌ Application environment validation failed. Please fix the missing / placeholder values above and restart.');
+  }
 
   app.listen(PORT, () => {
     console.log(`✅ DataHub Server running on port ${PORT}`);
