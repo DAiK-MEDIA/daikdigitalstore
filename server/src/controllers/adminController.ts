@@ -179,14 +179,21 @@ export const approveManualPayment = async (req: Request, res: Response) => {
                 apiSource = 'getus';
                 fulfilled = true;
                 console.log(`Manual Approval: GetUs successful for ${order.order_ref}`);
+              } else {
+                console.error(`Manual Approval: GetUs returned non-success status for ${order.order_ref}:`, getusRes);
               }
             } catch (err: any) {
               console.error(`Manual Approval: GetUs failed for ${order.order_ref}:`, err);
+              if (!updates.notification_message) {
+                updates.notification_message = `Manual Approval: GetUs error - ${err.message || err}`;
+              }
             }
           }
 
           if (fulfilled) {
             updates.notification_message = `Manual Approval: Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}`;
+          } else if (!updates.notification_message) {
+            updates.notification_message = 'Manual Approval: fulfillment requested but no external API response was recorded.';
           }
         }
       } catch (err) {

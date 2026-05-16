@@ -39,15 +39,19 @@ export const placeDataOrder = async (network: string, packageGb: number, recipie
       recipient,
     });
 
-    if (response.data?.status !== 'success') {
-      throw new Error(response.data?.message || 'GetUs order placement failed.');
+    const data = response.data || {};
+    const success = data.status === 'success' || data.success === true;
+    const orderId = data.order_id || data.orderId || data.transaction_id || data.id;
+
+    if (!success) {
+      throw new Error(data.message || data.error || 'GetUs order placement failed.');
     }
 
     return {
-      status: response.data.status,
-      order_id: response.data.order_id,
-      price: response.data.price,
-      raw: response.data,
+      status: data.status || (success ? 'success' : 'failed'),
+      order_id: String(orderId || ''),
+      price: data.price,
+      raw: data,
     };
   } catch (error: any) {
     const err = getGetUsError(error);
@@ -63,10 +67,13 @@ export const checkOrderStatus = async (orderId: string | number) => {
 
   try {
     const response = await getusClient.get(`/order-status?order_id=${orderId}`);
-    if (!response.data || typeof response.data !== 'object') {
+    const data = response.data;
+
+    if (!data || typeof data !== 'object') {
       throw new Error('Invalid GetUs order status response.');
     }
-    return response.data;
+
+    return data;
   } catch (error: any) {
     const err = getGetUsError(error);
     console.error('GetUs Check Status Error:', err);
