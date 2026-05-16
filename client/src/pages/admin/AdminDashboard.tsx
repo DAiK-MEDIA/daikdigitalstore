@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { cn } from '../../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
+import { safeArray } from '../../utils/api';
 import {
   LayoutDashboard, ShoppingBag, Settings as SettingsIcon,
   Plus, RefreshCw, Edit3, Trash2, Megaphone, Hash, ShieldCheck,
@@ -96,6 +97,8 @@ const AdminDashboard = () => {
   const [confirmDeleteOrder, setConfirmDeleteOrder] = useState<string | null>(null);
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<'all' | 'unpaid' | 'paid'>('all');
 
+  const authSupabase = supabase as any;
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     showToast('Copied to clipboard!');
@@ -104,14 +107,14 @@ const AdminDashboard = () => {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const getAuthHeader = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await authSupabase.auth.getSession();
     return { Authorization: `Bearer ${session?.access_token}` };
   };
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await authSupabase.auth.getSession();
       if (!session) {
         console.error('No session found in AdminDashboard');
         showToast('Session expired. Please log in again.');
@@ -123,9 +126,9 @@ const AdminDashboard = () => {
         axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/orders`, { headers }),
         axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/admin/settings`, { headers }),
       ]);
-      setOrders(ordersRes.data);
-      setSettings(settingsRes.data);
-      const { data: p } = await supabase.from('data_plans').select('*').order('size_gb', { ascending: true });
+      setOrders(safeArray<Order>(ordersRes.data));
+      setSettings(typeof settingsRes.data === 'object' && settingsRes.data !== null ? settingsRes.data : {});
+      const { data: p } = await authSupabase.from('data_plans').select('*').order('size_gb', { ascending: true });
       setPlans(p || []);
     } catch (err: any) {
       console.error('FetchData Error:', err.response?.data || err.message);
@@ -291,7 +294,7 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authSupabase.auth.signOut();
     window.location.href = '/staff-hq/login';
   };
 

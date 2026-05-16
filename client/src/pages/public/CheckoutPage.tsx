@@ -5,9 +5,10 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { AlertTriangle, ChevronLeft, Phone, User } from 'lucide-react';
+import { safeArray } from '../../utils/api';
 
 interface Plan {
-  id: string;
+  id: string | number;
   size_label: string;
   price: number;
 }
@@ -34,8 +35,10 @@ const CheckoutPage = () => {
 
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/plans?type=${userType}`);
-        const foundPlan = response.data.find((p: Plan) => p.id === planId);
-        
+        const plans = safeArray<Plan>(response.data);
+        const planIdValue = String(planId);
+        const foundPlan = plans.find((p) => String(p.id) === planIdValue);
+
         if (foundPlan) {
           setPlan(foundPlan);
         } else {
@@ -86,7 +89,7 @@ const CheckoutPage = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <button 
+      <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-sm font-bold text-on-surface-variant hover:text-navy transition-colors"
       >
@@ -116,7 +119,7 @@ const CheckoutPage = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input 
+              <Input
                 label="Full Name"
                 placeholder="Enter your full name"
                 icon={<User className="w-4 h-4" />}
@@ -124,7 +127,7 @@ const CheckoutPage = () => {
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
               />
-              <Input 
+              <Input
                 label="Phone Number"
                 placeholder="024 000 0000"
                 type="tel"
@@ -144,9 +147,9 @@ const CheckoutPage = () => {
 
               {error && <p className="text-sm text-error font-bold">{error}</p>}
 
-              <Button 
-                type="submit" 
-                className="w-full py-4 text-lg" 
+              <Button
+                type="submit"
+                className="w-full py-4 text-lg"
                 isLoading={isLoading}
               >
                 Proceed to Payment

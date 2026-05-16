@@ -74,7 +74,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             .select('key, value')
             .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata']);
 
-          const settingsMap = settings?.reduce((acc: any, curr) => {
+          const settingsMap = settings?.reduce((acc: any, curr: any) => {
             acc[curr.key] = curr.value;
             return acc;
           }, {}) || {};

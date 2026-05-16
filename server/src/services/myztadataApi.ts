@@ -3,12 +3,23 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const myZtaKey = process.env.MYZTADATA_API_KEY?.trim();
+const isPlaceholderKey = (value?: string) => {
+  if (!value) return true;
+  const normalized = value.toLowerCase();
+  return normalized === '' || normalized.startsWith('your') || normalized.includes('placeholder') || normalized.includes('example') || normalized.includes('replace');
+};
+
+if (isPlaceholderKey(myZtaKey)) {
+  console.warn('⚠️ MyZtaData API key missing or placeholder detected. MyZtaData features will not work in local development.');
+}
+
 const myZtaClient = axios.create({
   baseURL: 'https://myztadata.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'x-api-key': process.env.MYZTADATA_API_KEY || '',
+    'x-api-key': myZtaKey || '',
   },
 });
 

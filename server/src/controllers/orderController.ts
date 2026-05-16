@@ -11,11 +11,15 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    const normalizedPlanId = typeof plan_id === 'string' && /^[0-9]+$/.test(plan_id)
+      ? Number(plan_id)
+      : plan_id;
+
     // Get plan details to confirm amount
     const { data: plan, error: planError } = await supabase
       .from('data_plans')
       .select('*')
-      .eq('id', plan_id)
+      .eq('id', normalizedPlanId)
       .single();
 
     if (planError || !plan) {
@@ -46,6 +50,41 @@ export const createOrder = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error creating order:', error);
     res.status(500).json({ error: 'Failed to create order' });
+  }
+};
+
+export const getOrderById = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        order_ref,
+        full_name,
+        created_at,
+        phone_number,
+        amount_paid,
+        order_status,
+        api_order_id,
+        notification_message,
+        payment_method,
+        data_plans (
+          size_label
+        )
+      `)
+      .eq('id', Number(orderId))
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error fetching order by id:', error);
+    res.status(500).json({ error: 'Failed to fetch order' });
   }
 };
 
@@ -80,7 +119,7 @@ export const getOrderStatus = async (req: Request, res: Response) => {
     if (data.order_status === 'processing' && data.api_order_id) {
       try {
         const getusRes = await checkOrderStatus(data.api_order_id);
-        
+
         let newStatus = null;
         if (getusRes.order_status === 'SUCCESS') {
           newStatus = 'delivered';
@@ -94,7 +133,7 @@ export const getOrderStatus = async (req: Request, res: Response) => {
             .from('orders')
             .update({ order_status: newStatus })
             .eq('id', data.id);
-            
+
           // Update the local data object so the user sees it immediately
           data.order_status = newStatus;
         }
@@ -106,7 +145,7 @@ export const getOrderStatus = async (req: Request, res: Response) => {
 
     // Mask phone number as per PRD (e.g. 059****123)
     const phone = data.phone_number;
-    const maskedPhone = phone.length > 6 
+    const maskedPhone = phone.length > 6
       ? `${phone.substring(0, 3)}****${phone.substring(phone.length - 3)}`
       : '***';
 
@@ -117,6 +156,27 @@ export const getOrderStatus = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error fetching order status:', error);
     res.status(500).json({ error: 'Failed to fetch order status' });
+  }
+};
+
+export const getPublicSettings = async (_req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('admin_settings')
+      .select('key, value')
+      .in('key', ['whatsapp_link', 'momo_number']);
+
+    if (error) throw error;
+
+    const settings = (data || []).reduce((acc: Record<string, string>, curr: any) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {});
+
+    res.json(settings);
+  } catch (error: any) {
+    console.error('Error fetching public settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
   }
 };
 

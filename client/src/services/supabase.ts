@@ -3,8 +3,41 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials missing. Please check your .env.local file.');
-}
+const isPlaceholder = (value?: string) => {
+  return !value || value.trim() === '' || /your|placeholder|example|replace/i.test(value);
+};
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+const createMockSupabase = () => {
+  const chain = () => ({
+    select: chain,
+    in: chain,
+    eq: chain,
+    order: chain,
+    update: chain,
+    insert: chain,
+    delete: chain,
+    single: async () => ({ data: null, error: null }),
+    then: async (resolve: any) => resolve({ data: null, error: null }),
+    catch: () => ({})
+  });
+
+  return {
+    from: chain,
+    channel: () => ({
+      on: () => ({
+        subscribe: () => ({})
+      })
+    }),
+    removeChannel: () => {},
+  };
+};
+
+export const supabase = !isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createMockSupabase();
+
+if (!isPlaceholder(supabaseUrl) && !isPlaceholder(supabaseAnonKey)) {
+  console.log('Supabase client initialized.');
+} else {
+  console.warn('Supabase credentials missing or invalid. Using local mock client for development.');
+}

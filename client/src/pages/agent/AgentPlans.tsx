@@ -8,6 +8,7 @@ import { ArrowRight, Star, TrendingDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../utils/cn';
 import Badge from '../../components/ui/Badge';
+import { safeArray } from '../../utils/api';
 
 interface Plan {
   id: string;
@@ -32,11 +33,12 @@ const AgentPlans = () => {
     const fetchPlans = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/plans?type=agent`);
-        const data = response.data;
+        const data = Array.isArray(response.data) ? response.data : [];
         setPlans(data);
         if (data.length > 0) setSelectedPlan(data[0]);
       } catch (error) {
         console.error('Error fetching plans:', error);
+        setPlans([]);
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +77,7 @@ const AgentPlans = () => {
     <div className="space-y-12 pb-20">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-navy text-white p-10 rounded-[2.5rem] relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-yellow opacity-10 rounded-full blur-3xl -mr-32 -mt-32" />
-        
+
         <div className="relative z-10 space-y-4">
           <div className="flex items-center gap-2 text-yellow font-bold text-sm uppercase tracking-widest">
             <Star className="w-4 h-4 fill-yellow" />
@@ -112,7 +114,7 @@ const AgentPlans = () => {
                 ))}
               </div>
             ) : (
-              <motion.div 
+              <motion.div
                 variants={container}
                 initial="hidden"
                 animate="show"
@@ -125,8 +127,8 @@ const AgentPlans = () => {
                     onClick={() => setSelectedPlan(plan)}
                     className={cn(
                       "h-16 rounded-2xl font-black text-xl transition-all duration-300 border-2",
-                      selectedPlan?.id === plan.id 
-                        ? "bg-navy text-yellow border-navy shadow-lg scale-105" 
+                      selectedPlan?.id === plan.id
+                        ? "bg-navy text-yellow border-navy shadow-lg scale-105"
                         : "bg-white text-navy border-surface-highest hover:border-navy hover:scale-105"
                     )}
                   >
@@ -168,7 +170,7 @@ const AgentPlans = () => {
                           Wholesale Rate Applied
                         </div>
 
-                        <Button 
+                        <Button
                           className="w-full h-14 rounded-2xl text-lg shadow-xl hover:scale-[1.02] transition-transform"
                           onClick={() => navigate(`/checkout/${selectedPlan.id}?type=agent`)}
                         >
