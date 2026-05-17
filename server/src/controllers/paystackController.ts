@@ -62,7 +62,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
         // Fetch order details
         const { data: order } = await supabase
           .from('orders')
-          .select('*, data_plans(size_label)')
+          .select('*, data_plans(size_label, size_gb)')
           .eq('order_ref', reference)
           .single();
 
@@ -87,11 +87,22 @@ export const paystackWebhook = async (req: Request, res: Response) => {
             payment_method: 'paystack'
           };
 
-          if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans?.size_label) {
+          if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans) {
             try {
-              const packageGb = parseFloat(order.data_plans.size_label);
+              // Extract size_gb cleanly or parse from label if not present
+              const rawGb = order.data_plans.size_gb;
+              const packageGb = typeof rawGb === 'number' ? rawGb : parseFloat(order.data_plans.size_label?.replace(/[^0-9.]/g, '') || '0');
 
-              if (!isNaN(packageGb)) {
+              // Determine network from size_label
+              let network = 'MTN';
+              const label = (order.data_plans.size_label || '').toUpperCase();
+              if (label.includes('TELECEL')) {
+                network = 'Telecel';
+              } else if (label.includes('AIRTELTIGO') || label.includes('AT')) {
+                network = 'AirtelTigo';
+              }
+
+              if (!isNaN(packageGb) && packageGb > 0) {
                 let fulfilled = false;
                 let apiSource = '';
                 let apiResponse = null;
@@ -119,8 +130,8 @@ export const paystackWebhook = async (req: Request, res: Response) => {
 
                 if (!fulfilled && isGetUsEnabled) {
                   try {
-                    console.log(`Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB`);
-                    const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+                    console.log(`Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB on network: ${network}`);
+                    const getusRes = await placeDataOrder(network, packageGb, order.phone_number);
 
                     if (getusRes.status === 'success') {
                       updates.order_status = 'processing';

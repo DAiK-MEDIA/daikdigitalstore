@@ -111,7 +111,7 @@ export const approveManualPayment = async (req: Request, res: Response) => {
     // 1. Fetch order details
     const { data: order, error: fetchError } = await supabase
       .from('orders')
-      .select('*, data_plans(size_label)')
+      .select('*, data_plans(size_label, size_gb)')
       .eq('id', id)
       .single();
 
@@ -139,11 +139,22 @@ export const approveManualPayment = async (req: Request, res: Response) => {
     const isGetUsEnabled = settingsMap['auto_fulfill_api'] === 'true';
     const isMyZtaDataEnabled = settingsMap['auto_fulfill_api_myztadata'] === 'true';
 
-    if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans?.size_label) {
+    if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans) {
       try {
-        const packageGb = parseFloat(order.data_plans.size_label);
+        // Extract size_gb cleanly or parse from label if not present
+        const rawGb = order.data_plans.size_gb;
+        const packageGb = typeof rawGb === 'number' ? rawGb : parseFloat(order.data_plans.size_label?.replace(/[^0-9.]/g, '') || '0');
+
+        // Determine network from size_label
+        let network = 'MTN';
+        const label = (order.data_plans.size_label || '').toUpperCase();
+        if (label.includes('TELECEL')) {
+          network = 'Telecel';
+        } else if (label.includes('AIRTELTIGO') || label.includes('AT')) {
+          network = 'AirtelTigo';
+        }
         
-        if (!isNaN(packageGb)) {
+        if (!isNaN(packageGb) && packageGb > 0) {
           let fulfilled = false;
           let apiSource = '';
 
@@ -170,8 +181,8 @@ export const approveManualPayment = async (req: Request, res: Response) => {
           // Fallback to GetUs
           if (!fulfilled && isGetUsEnabled) {
             try {
-              console.log(`Manual Approval: Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB`);
-              const getusRes = await placeDataOrder('MTN', packageGb, order.phone_number);
+              console.log(`Manual Approval: Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB on network: ${network}`);
+              const getusRes = await placeDataOrder(network, packageGb, order.phone_number);
               
               if (getusRes.status === 'success') {
                 updates.order_status = 'processing';
