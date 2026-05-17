@@ -7,7 +7,6 @@ import { supabase } from '../../services/supabase';
 import { ArrowRight, ShieldCheck, Globe, Clock, CreditCard, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../utils/cn';
-import { safeArray } from '../../utils/api';
 
 interface Plan {
   id: string;
@@ -26,12 +25,11 @@ const LandingPage = () => {
     const fetchPlans = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/plans?type=client`);
-        const data = Array.isArray(response.data) ? response.data : [];
+        const data = response.data;
         setPlans(data);
         if (data.length > 0) setSelectedPlan(data[0]);
       } catch (error) {
         console.error('Error fetching plans:', error);
-        setPlans([]);
       } finally {
         setIsLoading(false);
       }
@@ -76,7 +74,7 @@ const LandingPage = () => {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto space-y-8">
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-yellow text-sm font-bold backdrop-blur-md"
@@ -85,7 +83,7 @@ const LandingPage = () => {
             Important Service Information
           </motion.div>
 
-          <motion.h1
+          <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -97,17 +95,17 @@ const LandingPage = () => {
             </span>
           </motion.h1>
 
-          <motion.p
+          <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
             className="text-xl text-white/70 max-w-2xl mx-auto leading-relaxed"
           >
-            Access high-speed MTN and Telecel data bundles at competitive rates.
+            Access high-speed MTN and Telecel data bundles at competitive rates. 
             We provide reliable connectivity for your personal and business needs.
           </motion.p>
-
-          <motion.div
+          
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
@@ -149,7 +147,7 @@ const LandingPage = () => {
                 ))}
               </div>
             ) : (
-              <motion.div
+              <motion.div 
                 variants={container}
                 initial="hidden"
                 whileInView="show"
@@ -163,12 +161,12 @@ const LandingPage = () => {
                     onClick={() => setSelectedPlan(plan)}
                     className={cn(
                       "h-16 rounded-2xl font-black text-xl transition-all duration-300 border-2",
-                      selectedPlan?.id === plan.id
-                        ? "bg-navy text-yellow border-navy shadow-lg scale-105"
+                      selectedPlan?.id === plan.id 
+                        ? "bg-navy text-yellow border-navy shadow-lg scale-105" 
                         : "bg-white text-navy border-surface-highest hover:border-navy hover:scale-105"
                     )}
                   >
-                    MTN {plan.size_label}
+                    {plan.size_label}
                   </motion.button>
                 ))}
               </motion.div>
@@ -189,7 +187,7 @@ const LandingPage = () => {
                     <div className="space-y-6 relative z-10">
                       <div className="space-y-1">
                         <span className="text-xs font-black text-on-surface-variant uppercase tracking-widest">Selected Bundle</span>
-                        <h3 className="text-4xl font-black text-navy">MTN {selectedPlan.size_label}</h3>
+                        <h3 className="text-4xl font-black text-navy">{selectedPlan.size_label}</h3>
                       </div>
 
                       <div className="space-y-4">
@@ -203,8 +201,7 @@ const LandingPage = () => {
                           Valid for 90 Days
                         </div>
 
-                        <Button
-                          type="button"
+                        <Button 
                           className="w-full h-14 rounded-2xl text-lg shadow-xl hover:scale-[1.02] transition-transform"
                           onClick={() => navigate(`/checkout/${selectedPlan.id}?type=client`)}
                         >
@@ -232,7 +229,7 @@ const LandingPage = () => {
           { icon: Clock, title: "24/7 Support", desc: "Our team is always here to help you." },
           { icon: CreditCard, title: "Flexible Pay", desc: "Pay with MoMo or any card seamlessly." }
         ].map((feat, i) => (
-          <motion.div
+          <motion.div 
             key={i}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

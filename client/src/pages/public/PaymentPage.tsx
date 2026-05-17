@@ -24,21 +24,23 @@ const PaymentPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Fetching from supabase directly for simplicity in this demo
     const fetchOrder = async () => {
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/id/${orderId}`);
-        setOrder(response.data);
-      } catch (err) {
-        console.error('Error fetching order:', err);
-        setError('Failed to load order details. Please try again.');
-      }
+      const { data } = await (await import('../../services/supabase')).supabase
+        .from('orders')
+        .select('*, data_plans(size_label)')
+        .eq('id', orderId)
+        .single();
+      setOrder(data);
 
-      try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/settings/public`);
-        setSettings(response.data);
-      } catch (err) {
-        console.error('Error fetching settings:', err);
-      }
+      const { data: s } = await (await import('../../services/supabase')).supabase
+        .from('admin_settings')
+        .select('*');
+      const setObj = s?.reduce((acc: any, curr) => {
+        acc[curr.key] = curr.value;
+        return acc;
+      }, {});
+      setSettings(setObj);
     };
     fetchOrder();
   }, [orderId]);
@@ -56,49 +58,32 @@ const PaymentPage = () => {
         email: 'customer@example.com' // Placeholder
       });
       window.location.href = response.data.data.authorization_url;
-    } catch (err: any) {
-      const message = err.response?.data?.error || err.message || 'Failed to initialize payment. Please try again or use the MoMo option.';
-      setError(message);
+    } catch (err) {
+      setError('Failed to initialize payment. Please try again or use the MoMo option.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const buildWhatsAppUrl = (link: string | undefined, momoNumber: string | undefined, message: string) => {
-    const cleanLink = link?.trim();
-    const cleanNumber = momoNumber?.trim().replace(/\D/g, '');
-    const isPlaceholderLink = !cleanLink || /0{6,}/.test(cleanLink) || cleanLink.toLowerCase().includes('example');
-
-    if (cleanLink && !isPlaceholderLink) {
-      return cleanLink.includes('?') ? `${cleanLink}&text=${encodeURIComponent(message)}` : `${cleanLink}?text=${encodeURIComponent(message)}`;
-    }
-
-    if (cleanNumber) {
-      return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
-    }
-
-    return `https://wa.me/?text=${encodeURIComponent(message)}`;
-  };
-
   const handleWhatsApp = async () => {
     try {
       if (!order) return;
+      // Mark as manual payment in backend
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${order.id}/payment-method`, {
         method: 'momo'
       });
 
-      const message = `Hello, I want to make a MoMo payment for Order ID: ${order.order_ref}. Plan: ${order.data_plans?.size_label}. Amount: GHS ${order.amount_paid}. Phone: ${order.phone_number}. Please guide me on how to proceed.`;
-      const whatsappUrl = buildWhatsAppUrl(settings?.whatsapp_link, settings?.momo_number, message);
-      window.open(whatsappUrl, '_blank');
+      const message = `Hello, I want to make a MoMo payment for Order ID: ${order?.order_ref}. Plan: ${order?.data_plans?.size_label}. Amount: GHS ${order?.amount_paid}. Phone: ${order?.phone_number}. Please guide me on how to proceed.`;
+      window.open(`${settings?.whatsapp_link}?text=${encodeURIComponent(message)}`, '_blank');
     } catch (err) {
       console.error('Failed to update payment method:', err);
-      const message = `Hello, I want to make a MoMo payment for Order ID: ${order.order_ref}. Plan: ${order.data_plans?.size_label}. Amount: GHS ${order.amount_paid}. Phone: ${order.phone_number}. Please guide me on how to proceed.`;
-      const whatsappUrl = buildWhatsAppUrl(settings?.whatsapp_link, settings?.momo_number, message);
-      window.open(whatsappUrl, '_blank');
+      // Still open WhatsApp even if API fails, to not block the user
+      const message = `Hello, I want to make a MoMo payment for Order ID: ${order?.order_ref}. Plan: ${order?.data_plans?.size_label}. Amount: GHS ${order?.amount_paid}. Phone: ${order?.phone_number}. Please guide me on how to proceed.`;
+      window.open(`${settings?.whatsapp_link}?text=${encodeURIComponent(message)}`, '_blank');
     }
   };
 
-  if (!order) return <div className="text-center py-20">{error ? error : 'Loading order...'}</div>;
+  if (!order) return <div className="text-center py-20">Loading order...</div>;
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
@@ -193,7 +178,7 @@ const PaymentPage = () => {
                   <div className="w-6 h-6 rounded-full bg-navy text-white flex items-center justify-center text-xs font-bold shrink-0">1</div>
                   <div className="text-sm">
                     <p className="text-on-surface-variant">Send <span className="font-bold text-navy">GHS {order.amount_paid}</span> to:</p>
-                    <p className="text-lg font-black text-navy">{settings?.momo_number || 'Not configured'}</p>
+                    <p className="text-lg font-black text-navy">{settings?.momo_number}</p>
                     <p className="text-xs font-bold opacity-60 uppercase">Merchant: DESMOND AMPONSAH</p>
                   </div>
                 </div>

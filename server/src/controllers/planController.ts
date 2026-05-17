@@ -4,7 +4,7 @@ import { supabase } from '../services/supabase';
 export const getPlans = async (req: Request, res: Response) => {
   try {
     const { type } = req.query; // 'client' or 'agent'
-
+    
     const { data, error } = await supabase
       .from('data_plans')
       .select('*')
@@ -14,7 +14,7 @@ export const getPlans = async (req: Request, res: Response) => {
     if (error) throw error;
 
     // Filter and map prices based on user type
-    const formattedPlans = (data as any[]).map((plan: any) => ({
+    const formattedPlans = data.map(plan => ({
       id: plan.id,
       size_label: plan.size_label,
       size_gb: plan.size_gb,

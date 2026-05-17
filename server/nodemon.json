@@ -1,5 +1,5 @@
 {
   "watch": ["src"],
   "ext": "ts",
-  "exec": "ts-node src/index.ts"
+  "exec": "powershell -Command \"$conn = Get-NetTCPConnection -LocalPort 5001 -ErrorAction SilentlyContinue; if ($conn) { Stop-Process -Id $conn.OwningProcess -Force }; ts-node src/index.ts\""
 }
