@@ -129,21 +129,16 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                       apiResponse = getusRes;
                       fulfilled = true;
                       console.log(`GetUs fulfillment successful for ${order.order_ref}: ${getusRes.order_id}`);
-                    } else {
-                      console.error(`Paystack webhook: GetUs returned non-success status for ${order.order_ref}:`, getusRes);
                     }
                   } catch (err: any) {
                     console.error(`Paystack webhook: GetUs auto-fulfillment failed for ${order.order_ref}:`, err);
-                    if (!updates.notification_message) {
-                      updates.notification_message = `Paystack auto-fulfillment GetUs error - ${err.message || err}`;
-                    }
                   }
                 }
 
+                // If fulfilled, we could store the apiSource if the column exists
+                // For now we'll just log it or add it to notification_message as a internal note
                 if (fulfilled) {
                   updates.notification_message = `Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}`;
-                } else if (!updates.notification_message) {
-                  updates.notification_message = 'Paystack auto-fulfillment attempted but no external API response was recorded.';
                 }
               }
             } catch (err) {

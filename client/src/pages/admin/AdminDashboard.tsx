@@ -18,7 +18,6 @@ import {
 interface Order {
   id: string; order_ref: string; full_name: string; phone_number: string;
   amount_paid: number; order_status: string; notification_message?: string;
-  api_order_id?: string;
   data_plans?: { size_label: string }; created_at: string;
   payment_method?: string; payment_status?: string;
 }
@@ -527,21 +526,6 @@ const AdminDashboard = () => {
                               {order.payment_status === 'paid' ? 'Paid' : order.payment_method === 'momo' ? 'Verify Payment' : 'Unpaid'}
                             </div>
                           </div>
-                          {(order.api_order_id || order.notification_message?.toLowerCase().includes('getus')) && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {order.api_order_id && (
-                                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[10px] font-black uppercase tracking-widest">
-                                  <span>Fulfillment ID:</span>
-                                  <span className="truncate max-w-[10rem]">{order.api_order_id}</span>
-                                </span>
-                              )}
-                              {order.notification_message && (
-                                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container text-navy border border-surface-highest text-[10px] font-black uppercase tracking-widest">
-                                  <span>{order.notification_message}</span>
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </div>
 
                         {/* Main Body: Info Grid */}
