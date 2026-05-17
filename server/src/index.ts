@@ -1,15 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();          // ← must run before any import that reads process.env
+
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
 import paystackRoutes from './routes/paystack';
 import planRoutes from './routes/plans';
 import orderRoutes from './routes/orders';
 import adminRoutes from './routes/admin';
 import agentRoutes from './routes/agent';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;

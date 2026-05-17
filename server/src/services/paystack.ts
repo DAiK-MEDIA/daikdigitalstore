@@ -1,16 +1,32 @@
 import axios from 'axios';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+/**
+ * Helper to read the Paystack secret at call time (not module-load time)
+ * so that dotenv / Vercel env vars are guaranteed to be available.
+ */
+const getPaystackKey = (): string => {
+  const key = process.env.PAYSTACK_SECRET_KEY;
+  if (!key) {
+    throw new Error(
+      'PAYSTACK_SECRET_KEY is not configured. ' +
+      'Set it in the server .env file (local) or in the Vercel Environment Variables dashboard (production).'
+    );
+  }
+  return key;
+};
 
 const paystackApi = axios.create({
   baseURL: 'https://api.paystack.co',
   headers: {
-    Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
     'Content-Type': 'application/json',
   },
+});
+
+// Inject the Authorization header dynamically on every request
+// so the key is always read from the live process.env value.
+paystackApi.interceptors.request.use((config) => {
+  config.headers.Authorization = `Bearer ${getPaystackKey()}`;
+  return config;
 });
 
 export const initializeTransaction = async (email: string, amount: number, reference: string) => {
@@ -24,7 +40,7 @@ export const initializeTransaction = async (email: string, amount: number, refer
     return response.data;
   } catch (error: any) {
     const errorMsg = error.response?.data?.message || 'Failed to initialize Paystack transaction';
-    console.error('Paystack error:', error.message);
+    console.error('Paystack init error:', error.response?.data || error.message);
     throw new Error(errorMsg);
   }
 };
@@ -34,7 +50,7 @@ export const verifyTransaction = async (reference: string) => {
     const response = await paystackApi.get(`/transaction/verify/${reference}`);
     return response.data;
   } catch (error: any) {
-    console.error('Paystack error:', error.message);
+    console.error('Paystack verify error:', error.response?.data || error.message);
     throw new Error('Failed to verify Paystack transaction');
   }
 };
