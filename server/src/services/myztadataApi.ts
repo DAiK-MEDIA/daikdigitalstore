@@ -3,17 +3,17 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const myZtaClient = axios.create({
-  baseURL: 'https://myztadata.com/api/v1',
-  headers: {
+const getMyZtaHeaders = () => {
+  const key = process.env.MYZTADATA_API_KEY || '';
+  return {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-  },
-});
+    'x-api-key': key
+  };
+};
 
-myZtaClient.interceptors.request.use((config) => {
-  config.headers['x-api-key'] = process.env.MYZTADATA_API_KEY || '';
-  return config;
+const myZtaClient = axios.create({
+  baseURL: 'https://myztadata.com/api/v1',
 });
 
 // Helper to get formatted error
@@ -24,7 +24,7 @@ const getMyZtaError = (error: any) => {
 
 export const fetchNetworks = async () => {
   try {
-    const response = await myZtaClient.get('/fetch-networks');
+    const response = await myZtaClient.get('/fetch-networks', { headers: getMyZtaHeaders() });
     return response.data;
   } catch (error: any) {
     const err = getMyZtaError(error);
@@ -36,7 +36,7 @@ export const fetchNetworks = async () => {
 
 export const fetchDataPackages = async () => {
   try {
-    const response = await myZtaClient.get('/fetch-data-packages');
+    const response = await myZtaClient.get('/fetch-data-packages', { headers: getMyZtaHeaders() });
     return response.data;
   } catch (error: any) {
     const err = getMyZtaError(error);
@@ -57,7 +57,7 @@ export const buyOtherPackage = async (msisdn: string, networkId: number, sharedB
     if (externalRef) payload.external_api_ref = externalRef;
     if (incomingRef) payload.incoming_api_ref = incomingRef;
 
-    const response = await myZtaClient.post('/buy-other-package', payload);
+    const response = await myZtaClient.post('/buy-other-package', payload, { headers: getMyZtaHeaders() });
     return response.data;
   } catch (error: any) {
     const err = getMyZtaError(error);
@@ -70,7 +70,7 @@ export const fetchOtherNetworkTransaction = async (transactionId: string) => {
   try {
     const response = await myZtaClient.post('/fetch-other-network-transaction', {
       transaction_id: transactionId,
-    });
+    }, { headers: getMyZtaHeaders() });
     return response.data;
   } catch (error: any) {
     const err = getMyZtaError(error);
