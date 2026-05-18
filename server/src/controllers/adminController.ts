@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase';
 import { generateUniqueOrderRef } from '../utils/orderRef';
 import { placeDataOrder } from '../services/getusApi';
 import { buyOtherPackage } from '../services/myztadataApi';
+import { createBossuOrder } from '../services/bossuApi';
 
 // --- Orders ---
 
@@ -129,7 +130,7 @@ export const approveManualPayment = async (req: Request, res: Response) => {
     const { data: settings } = await supabase
       .from('admin_settings')
       .select('key, value')
-      .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata']);
+      .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata', 'auto_fulfill_api_bossudata']);
       
     const settingsMap = settings?.reduce((acc: any, curr) => {
       acc[curr.key] = curr.value;
@@ -138,8 +139,9 @@ export const approveManualPayment = async (req: Request, res: Response) => {
 
     const isGetUsEnabled = settingsMap['auto_fulfill_api'] === 'true';
     const isMyZtaDataEnabled = settingsMap['auto_fulfill_api_myztadata'] === 'true';
+    const isBossuDataEnabled = settingsMap['auto_fulfill_api_bossudata'] === 'true';
 
-    if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans) {
+    if ((isGetUsEnabled || isMyZtaDataEnabled || isBossuDataEnabled) && order.data_plans) {
       try {
         // Extract size_gb cleanly or parse from label if not present
         const rawGb = order.data_plans.size_gb;
@@ -158,8 +160,35 @@ export const approveManualPayment = async (req: Request, res: Response) => {
           let fulfilled = false;
           let apiSource = '';
 
-          // Try MyZtaData first if enabled
-          if (isMyZtaDataEnabled) {
+          // Try Bossu Data Hub first if enabled
+          if (isBossuDataEnabled) {
+            try {
+              let bossuNetwork = 'mtn';
+              if (network === 'Telecel') bossuNetwork = 'telecel';
+              else if (network === 'AirtelTigo') bossuNetwork = 'at';
+
+              console.log(`Manual Approval: Attempting BossuDataHub fulfillment for ${order.order_ref}: ${packageGb}GB on network ${bossuNetwork}`);
+              const bossuRes = await createBossuOrder({
+                network: bossuNetwork,
+                package_key: `${packageGb}gb`,
+                recipient_phone: order.phone_number,
+                external_reference: order.order_ref
+              });
+
+              if (bossuRes.status === 'success' || bossuRes.order_id) {
+                updates.order_status = 'processing';
+                updates.api_order_id = String(bossuRes.order_id || bossuRes.transaction_id);
+                apiSource = 'bossudata';
+                fulfilled = true;
+                console.log(`Manual Approval: BossuDataHub successful for ${order.order_ref}`);
+              }
+            } catch (err: any) {
+              console.error(`Manual Approval: BossuDataHub failed for ${order.order_ref}:`, err);
+            }
+          }
+
+          // Try MyZtaData next if enabled
+          if (!fulfilled && isMyZtaDataEnabled) {
             try {
               // Map network string to MyZtaData network_id
               let myZtaNetworkId = 3; // MTN

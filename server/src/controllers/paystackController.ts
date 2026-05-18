@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase';
 import { initializeTransaction, verifyTransaction } from '../services/paystack';
 import { placeDataOrder } from '../services/getusApi';
 import { buyOtherPackage } from '../services/myztadataApi';
+import { createBossuOrder } from '../services/bossuApi';
 import crypto from 'crypto';
 
 export const initPayment = async (req: Request, res: Response) => {
@@ -72,7 +73,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
           const { data: settings } = await supabase
             .from('admin_settings')
             .select('key, value')
-            .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata']);
+            .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata', 'auto_fulfill_api_bossudata']);
 
           const settingsMap = settings?.reduce((acc: any, curr) => {
             acc[curr.key] = curr.value;
@@ -81,13 +82,14 @@ export const paystackWebhook = async (req: Request, res: Response) => {
 
           const isGetUsEnabled = settingsMap['auto_fulfill_api'] === 'true';
           const isMyZtaDataEnabled = settingsMap['auto_fulfill_api_myztadata'] === 'true';
+          const isBossuDataEnabled = settingsMap['auto_fulfill_api_bossudata'] === 'true';
 
           let updates: any = {
             payment_status: 'paid',
             payment_method: 'paystack'
           };
 
-          if ((isGetUsEnabled || isMyZtaDataEnabled) && order.data_plans) {
+          if ((isGetUsEnabled || isMyZtaDataEnabled || isBossuDataEnabled) && order.data_plans) {
             try {
               // Extract size_gb cleanly or parse from label if not present
               const rawGb = order.data_plans.size_gb;
@@ -107,7 +109,34 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                 let apiSource = '';
                 let apiResponse = null;
 
-                if (isMyZtaDataEnabled) {
+                if (isBossuDataEnabled) {
+                  try {
+                    let bossuNetwork = 'mtn';
+                    if (network === 'Telecel') bossuNetwork = 'telecel';
+                    else if (network === 'AirtelTigo') bossuNetwork = 'at'; // Adjust if Bossu uses different string for AT
+
+                    console.log(`Attempting BossuDataHub fulfillment for ${order.order_ref}: ${packageGb}GB on network ${bossuNetwork}`);
+                    const bossuRes = await createBossuOrder({
+                      network: bossuNetwork,
+                      package_key: `${packageGb}gb`, // Bossu expects e.g., '1gb'
+                      recipient_phone: order.phone_number,
+                      external_reference: order.order_ref
+                    });
+
+                    if (bossuRes.status === 'success' || bossuRes.order_id) { // adjust success check as per Bossu
+                      updates.order_status = 'processing';
+                      updates.api_order_id = String(bossuRes.order_id || bossuRes.transaction_id);
+                      apiSource = 'bossudata';
+                      apiResponse = bossuRes;
+                      fulfilled = true;
+                      console.log(`BossuDataHub successful for ${order.order_ref}: ${updates.api_order_id}`);
+                    }
+                  } catch (err: any) {
+                    console.error(`Paystack webhook: BossuDataHub failed for ${order.order_ref}:`, err);
+                  }
+                }
+
+                if (!fulfilled && isMyZtaDataEnabled) {
                   try {
                     // Map network string to MyZtaData network_id
                     let myZtaNetworkId = 3; // MTN

@@ -798,6 +798,17 @@ const AdminDashboard = () => {
                       <span className="text-xs text-on-surface-variant block leading-snug">Auto-fulfill via MyZtaData when paid.</span>
                     </div>
                   </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-surface-highest bg-surface-container/30 hover:bg-surface-container transition-colors">
+                    <div className={cn('w-11 h-6 shrink-0 rounded-full transition-colors relative', settings.auto_fulfill_api_bossudata === 'true' ? 'bg-navy' : 'bg-surface-highest')}>
+                      <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all', settings.auto_fulfill_api_bossudata === 'true' ? 'left-6' : 'left-1')} />
+                      <input type="checkbox" className="sr-only" checked={settings.auto_fulfill_api_bossudata === 'true'} onChange={(e) => setSettings({ ...settings, auto_fulfill_api_bossudata: e.target.checked.toString() })} />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-navy block">Bossu Data Hub API</span>
+                      <span className="text-xs text-on-surface-variant block leading-snug">Auto-fulfill via Bossu Data Hub when paid.</span>
+                    </div>
+                  </label>
                 </div>
               </div>
 
