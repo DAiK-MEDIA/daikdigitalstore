@@ -7,8 +7,12 @@ const getusClient = axios.create({
   baseURL: 'https://getus.site/wp-json/ddm/v1',
   headers: {
     'Content-Type': 'application/json',
-    'X-API-Key': process.env.GETUS_API_KEY || '',
   },
+});
+
+getusClient.interceptors.request.use((config) => {
+  config.headers['X-API-Key'] = process.env.GETUS_API_KEY || '';
+  return config;
 });
 
 // Helper to get formatted error

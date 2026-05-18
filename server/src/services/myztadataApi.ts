@@ -8,8 +8,12 @@ const myZtaClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'x-api-key': process.env.MYZTADATA_API_KEY || '',
   },
+});
+
+myZtaClient.interceptors.request.use((config) => {
+  config.headers['x-api-key'] = process.env.MYZTADATA_API_KEY || '';
+  return config;
 });
 
 // Helper to get formatted error
