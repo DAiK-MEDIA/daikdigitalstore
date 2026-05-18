@@ -108,6 +108,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                 let fulfilled = false;
                 let apiSource = '';
                 let apiResponse = null;
+                let debugLog: string[] = [];
 
                 if (isBossuDataEnabled) {
                   try {
@@ -120,7 +121,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                       network: bossuNetwork,
                       package_key: `${packageGb}gb`, // Bossu expects e.g., '1gb'
                       recipient_phone: order.phone_number,
-                      external_reference: order.order_ref
+                      external_reference: `${order.order_ref}_${Date.now()}`
                     });
 
                     if (bossuRes.status === 'success' || bossuRes.order_id) { // adjust success check as per Bossu
@@ -132,6 +133,8 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                       console.log(`BossuDataHub successful for ${order.order_ref}: ${updates.api_order_id}`);
                     }
                   } catch (err: any) {
+                    const errorMsg = err.message || JSON.stringify(err);
+                    debugLog.push(`Bossu: ${errorMsg}`);
                     console.error(`Paystack webhook: BossuDataHub failed for ${order.order_ref}:`, err);
                   }
                 }
@@ -147,7 +150,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                     const sharedBundle = packageGb * 1000;
                     console.log(`Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB) on network ID ${myZtaNetworkId}`);
 
-                    const myZtaRes = await buyOtherPackage(order.phone_number, myZtaNetworkId, sharedBundle, order.order_ref);
+                    const myZtaRes = await buyOtherPackage(order.phone_number, myZtaNetworkId, sharedBundle, `${order.order_ref}_${Date.now()}`);
 
                     if (myZtaRes.success) {
                       updates.order_status = 'processing';
@@ -158,6 +161,8 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                       console.log(`MyZtaData fulfillment successful for ${order.order_ref}: ${myZtaRes.transaction_code}`);
                     }
                   } catch (err: any) {
+                    const errorMsg = err.message || JSON.stringify(err);
+                    debugLog.push(`MyZtaData: ${errorMsg}`);
                     console.error(`Paystack webhook: MyZtaData auto-fulfillment failed for ${order.order_ref}:`, err);
                   }
                 }
@@ -176,6 +181,8 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                       console.log(`GetUs fulfillment successful for ${order.order_ref}: ${getusRes.order_id}`);
                     }
                   } catch (err: any) {
+                    const errorMsg = err.message || JSON.stringify(err);
+                    debugLog.push(`GetUs: ${errorMsg}`);
                     console.error(`Paystack webhook: GetUs auto-fulfillment failed for ${order.order_ref}:`, err);
                   }
                 }
@@ -183,7 +190,9 @@ export const paystackWebhook = async (req: Request, res: Response) => {
                 // If fulfilled, we could store the apiSource if the column exists
                 // For now we'll just log it or add it to notification_message as a internal note
                 if (fulfilled) {
-                  updates.notification_message = `Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}`;
+                  updates.notification_message = `Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}. ${debugLog.length > 0 ? '(Skipped: ' + debugLog.join(', ') + ')' : ''}`;
+                } else {
+                  updates.notification_message = `Auto-Fulfillment Failed! Errors: ${debugLog.join(' | ')}`;
                 }
               }
             } catch (err) {

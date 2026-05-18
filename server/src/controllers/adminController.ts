@@ -159,6 +159,7 @@ export const approveManualPayment = async (req: Request, res: Response) => {
         if (!isNaN(packageGb) && packageGb > 0) {
           let fulfilled = false;
           let apiSource = '';
+          let debugLog: string[] = [];
 
           // Try Bossu Data Hub first if enabled
           if (isBossuDataEnabled) {
@@ -172,7 +173,7 @@ export const approveManualPayment = async (req: Request, res: Response) => {
                 network: bossuNetwork,
                 package_key: `${packageGb}gb`,
                 recipient_phone: order.phone_number,
-                external_reference: order.order_ref
+                external_reference: `${order.order_ref}_${Date.now()}`
               });
 
               if (bossuRes.status === 'success' || bossuRes.order_id) {
@@ -183,6 +184,8 @@ export const approveManualPayment = async (req: Request, res: Response) => {
                 console.log(`Manual Approval: BossuDataHub successful for ${order.order_ref}`);
               }
             } catch (err: any) {
+              const errorMsg = err.message || JSON.stringify(err);
+              debugLog.push(`Bossu: ${errorMsg}`);
               console.error(`Manual Approval: BossuDataHub failed for ${order.order_ref}:`, err);
             }
           }
@@ -198,7 +201,7 @@ export const approveManualPayment = async (req: Request, res: Response) => {
               const sharedBundle = packageGb * 1000;
               console.log(`Manual Approval: Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB) on network ID ${myZtaNetworkId}`);
               
-              const myZtaRes = await buyOtherPackage(order.phone_number, myZtaNetworkId, sharedBundle, order.order_ref);
+              const myZtaRes = await buyOtherPackage(order.phone_number, myZtaNetworkId, sharedBundle, `${order.order_ref}_${Date.now()}`);
               
               if (myZtaRes.success) {
                 updates.order_status = 'processing';
@@ -208,6 +211,8 @@ export const approveManualPayment = async (req: Request, res: Response) => {
                 console.log(`Manual Approval: MyZtaData successful for ${order.order_ref}`);
               }
             } catch (err: any) {
+              const errorMsg = err.message || JSON.stringify(err);
+              debugLog.push(`MyZtaData: ${errorMsg}`);
               console.error(`Manual Approval: MyZtaData failed for ${order.order_ref}:`, err);
             }
           }
@@ -226,12 +231,16 @@ export const approveManualPayment = async (req: Request, res: Response) => {
                 console.log(`Manual Approval: GetUs successful for ${order.order_ref}`);
               }
             } catch (err: any) {
+              const errorMsg = err.message || JSON.stringify(err);
+              debugLog.push(`GetUs: ${errorMsg}`);
               console.error(`Manual Approval: GetUs failed for ${order.order_ref}:`, err);
             }
           }
 
           if (fulfilled) {
-            updates.notification_message = `Manual Approval: Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}`;
+            updates.notification_message = `Manual Approval: Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}. ${debugLog.length > 0 ? '(Skipped: ' + debugLog.join(', ') + ')' : ''}`;
+          } else {
+            updates.notification_message = `Failed to Auto-Fulfill! Errors: ${debugLog.join(' | ')}`;
           }
         }
       } catch (err) {
