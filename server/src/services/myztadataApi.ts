@@ -46,18 +46,35 @@ export const fetchDataPackages = async () => {
 };
 
 
-export const buyOtherPackage = async (msisdn: string, networkId: number, sharedBundle: number, externalRef?: string) => {
+export const buyOtherPackage = async (msisdn: string, networkId: number, sharedBundle: number, externalRef?: string, incomingRef?: string) => {
   try {
-    const response = await myZtaClient.post('/buy-other-package', {
+    const payload: any = {
       recipient_msisdn: msisdn,
       network_id: networkId,
       shared_bundle: sharedBundle,
-      external_api_ref: externalRef,
-    });
+    };
+    
+    if (externalRef) payload.external_api_ref = externalRef;
+    if (incomingRef) payload.incoming_api_ref = incomingRef;
+
+    const response = await myZtaClient.post('/buy-other-package', payload);
     return response.data;
   } catch (error: any) {
     const err = getMyZtaError(error);
     console.error('MyZtaData Buy Package Error:', err);
+    throw err;
+  }
+};
+
+export const fetchOtherNetworkTransaction = async (transactionId: string) => {
+  try {
+    const response = await myZtaClient.post('/fetch-other-network-transaction', {
+      transaction_id: transactionId,
+    });
+    return response.data;
+  } catch (error: any) {
+    const err = getMyZtaError(error);
+    console.error('MyZtaData Fetch Transaction Error:', err);
     throw err;
   }
 };

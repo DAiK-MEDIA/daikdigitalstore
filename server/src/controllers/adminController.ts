@@ -161,10 +161,15 @@ export const approveManualPayment = async (req: Request, res: Response) => {
           // Try MyZtaData first if enabled
           if (isMyZtaDataEnabled) {
             try {
+              // Map network string to MyZtaData network_id
+              let myZtaNetworkId = 3; // MTN
+              if (network === 'Telecel') myZtaNetworkId = 2;
+              else if (network === 'AirtelTigo') myZtaNetworkId = 1;
+
               const sharedBundle = packageGb * 1000;
-              console.log(`Manual Approval: Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB)`);
+              console.log(`Manual Approval: Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB) on network ID ${myZtaNetworkId}`);
               
-              const myZtaRes = await buyOtherPackage(order.phone_number, 3, sharedBundle, order.order_ref);
+              const myZtaRes = await buyOtherPackage(order.phone_number, myZtaNetworkId, sharedBundle, order.order_ref);
               
               if (myZtaRes.success) {
                 updates.order_status = 'processing';
