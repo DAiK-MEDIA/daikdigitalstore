@@ -41,6 +41,9 @@ const PaymentPage = () => {
         return acc;
       }, {});
       setSettings(setObj);
+      if (setObj?.paystack_enabled === 'false') {
+        setMethod('momo');
+      }
     };
     fetchOrder();
   }, [orderId]);
@@ -119,11 +122,15 @@ const PaymentPage = () => {
       <div className="space-y-4">
         {/* Pay Online Option */}
         <button
-          onClick={() => setMethod('paystack')}
+          onClick={() => {
+            if (settings?.paystack_enabled !== 'false') setMethod('paystack');
+          }}
           className={cn(
             "w-full text-left p-6 rounded-xl border-2 transition-all flex items-center justify-between group",
-            method === 'paystack' ? "border-navy bg-navy/5" : "border-surface-highest bg-white hover:border-navy/30"
+            method === 'paystack' ? "border-navy bg-navy/5" : "border-surface-highest bg-white hover:border-navy/30",
+            settings?.paystack_enabled === 'false' && "opacity-50 cursor-not-allowed grayscale"
           )}
+          disabled={settings?.paystack_enabled === 'false'}
         >
           <div className="flex items-center gap-4">
             <div className={cn(
@@ -134,7 +141,9 @@ const PaymentPage = () => {
             </div>
             <div>
               <h4 className="font-bold text-navy">Pay Online</h4>
-              <p className="text-sm text-on-surface-variant">Instant Activation via Paystack</p>
+              <p className="text-sm text-on-surface-variant">
+                {settings?.paystack_enabled === 'false' ? 'Currently Disabled' : 'Instant Activation via Paystack'}
+              </p>
             </div>
           </div>
           {method === 'paystack' && <CheckCircle2 className="w-6 h-6 text-navy" />}
