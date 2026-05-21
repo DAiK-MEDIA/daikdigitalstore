@@ -21,6 +21,16 @@ export const initPayment = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
+    const { data: settings } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'paystack_enabled')
+      .single();
+
+    if (settings && settings.value === 'false') {
+      return res.status(400).json({ error: 'Pay online option is currently disabled. Please use the manual MoMo transfer option.' });
+    }
+
     // Ensure amount_paid is treated as a number to prevent string concatenation
     const baseAmount = Number(order.amount_paid);
     // Add Paystack fee (1.95%) so the merchant receives the exact amount

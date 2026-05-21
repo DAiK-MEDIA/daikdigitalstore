@@ -65,8 +65,8 @@ const PaymentPage = () => {
         email: 'customer@example.com' // Placeholder
       });
       window.location.href = response.data.data.authorization_url;
-    } catch (err) {
-      setError('Failed to initialize payment. Please try again or use the MoMo option.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to initialize payment. Please try again or use the MoMo option.');
     } finally {
       setIsLoading(false);
     }
