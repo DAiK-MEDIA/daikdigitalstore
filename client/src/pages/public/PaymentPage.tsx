@@ -46,6 +46,10 @@ const PaymentPage = () => {
   }, [orderId]);
 
   const handlePaystack = async () => {
+    if (settings?.paystack_enabled === 'false') {
+      setError('Pay online option is disabled. Please use the Manual MoMo Transfer option.');
+      return;
+    }
     setIsLoading(true);
     setError('');
     try {
@@ -213,17 +217,31 @@ const PaymentPage = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Button
-              className="w-full py-4 text-lg"
-              onClick={handlePaystack}
-              isLoading={isLoading}
-            >
-              Pay Now via Paystack
-              <ChevronRight className="w-5 h-5" />
-            </Button>
-            <p className="text-center mt-4 text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-              Secure 256-bit SSL Encrypted Payment
-            </p>
+            {settings?.paystack_enabled === 'false' ? (
+              <div className="bg-surface-container rounded-xl p-6 text-center space-y-2 border border-surface-highest">
+                <div className="w-12 h-12 bg-surface-highest rounded-full flex items-center justify-center mx-auto mb-2 opacity-50">
+                  <XCircle className="w-6 h-6 text-on-surface-variant" />
+                </div>
+                <h4 className="font-bold text-navy">Pay Online is Disabled</h4>
+                <p className="text-sm text-on-surface-variant">
+                  This option is currently unavailable. Please select Manual MoMo Transfer above.
+                </p>
+              </div>
+            ) : (
+              <>
+                <Button
+                  className="w-full py-4 text-lg"
+                  onClick={handlePaystack}
+                  isLoading={isLoading}
+                >
+                  Pay Now via Paystack
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+                <p className="text-center mt-4 text-xs font-bold text-on-surface-variant uppercase tracking-widest">
+                  Secure 256-bit SSL Encrypted Payment
+                </p>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

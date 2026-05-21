@@ -812,6 +812,25 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
+              {/* Payment Gateways */}
+              <div className="space-y-4 pt-6 border-t border-surface-highest">
+                <h3 className="font-bold text-navy flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-navy" /> Payment Gateways
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-start gap-3 cursor-pointer p-4 rounded-xl border border-surface-highest bg-surface-container/30 hover:bg-surface-container transition-colors">
+                    <div className={cn('w-11 h-6 shrink-0 rounded-full transition-colors relative', settings.paystack_enabled !== 'false' ? 'bg-navy' : 'bg-surface-highest')}>
+                      <div className={cn('absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all', settings.paystack_enabled !== 'false' ? 'left-6' : 'left-1')} />
+                      <input type="checkbox" className="sr-only" checked={settings.paystack_enabled !== 'false'} onChange={(e) => setSettings({ ...settings, paystack_enabled: e.target.checked ? 'true' : 'false' })} />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-navy block">Paystack</span>
+                      <span className="text-xs text-on-surface-variant block leading-snug">Allow customers to pay online via Paystack.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* General Settings */}
               <div className="space-y-4 pt-6 border-t border-surface-highest">
                 <h3 className="font-bold text-navy flex items-center gap-2">
