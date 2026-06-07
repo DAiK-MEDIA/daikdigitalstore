@@ -17,11 +17,14 @@ const StatusPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchStatus = async (ref: string) => {
+  const fetchStatus = async (ref: string, paystackRef?: string) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders/${ref}/status`);
+      const url = paystackRef
+        ? `${import.meta.env.VITE_API_BASE_URL}/api/orders/${ref}/status?paystack_ref=${paystackRef}`
+        : `${import.meta.env.VITE_API_BASE_URL}/api/orders/${ref}/status`;
+      const response = await axios.get(url);
       setOrder(response.data);
     } catch (err: any) {
       setError('Order not found. Please check your ID and try again.');
@@ -37,6 +40,7 @@ const StatusPage = () => {
       
       // If the URL has the long reference, replace it with the clean 7-digit one
       if (urlRef !== cleanRef) {
+        fetchStatus(cleanRef, urlRef);
         navigate(`/status/${cleanRef}`, { replace: true });
         return;
       }

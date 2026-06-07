@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { generateUniqueOrderRef } from '../utils/orderRef';
-import { placeDataOrder } from '../services/getusApi';
-import { buyOtherPackage } from '../services/myztadataApi';
-import { createBossuOrder } from '../services/bossuApi';
+import { autoFulfillOrder } from '../services/fulfillment';
 
 // --- Orders ---
 
@@ -126,127 +124,12 @@ export const approveManualPayment = async (req: Request, res: Response) => {
       payment_method: order.payment_method === 'paystack' ? 'paystack' : 'momo'
     };
 
-    // 3. Check if Auto-Fulfillment is enabled
-    const { data: settings } = await supabase
-      .from('admin_settings')
-      .select('key, value')
-      .in('key', ['auto_fulfill_api', 'auto_fulfill_api_myztadata', 'auto_fulfill_api_bossudata']);
-      
-    const settingsMap = settings?.reduce((acc: any, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    }, {}) || {};
-
-    const isGetUsEnabled = settingsMap['auto_fulfill_api'] === 'true';
-    const isMyZtaDataEnabled = settingsMap['auto_fulfill_api_myztadata'] === 'true';
-    const isBossuDataEnabled = settingsMap['auto_fulfill_api_bossudata'] === 'true';
-
-    if ((isGetUsEnabled || isMyZtaDataEnabled || isBossuDataEnabled) && order.data_plans) {
-      try {
-        // Extract size_gb cleanly or parse from label if not present
-        const rawGb = order.data_plans.size_gb;
-        const packageGb = typeof rawGb === 'number' ? rawGb : parseFloat(order.data_plans.size_label?.replace(/[^0-9.]/g, '') || '0');
-
-        // Determine network from size_label
-        let network = 'MTN';
-        const label = (order.data_plans.size_label || '').toUpperCase();
-        if (label.includes('TELECEL')) {
-          network = 'Telecel';
-        } else if (label.includes('AIRTELTIGO') || label.includes('AT')) {
-          network = 'AirtelTigo';
-        }
-        
-        if (!isNaN(packageGb) && packageGb > 0) {
-          let fulfilled = false;
-          let apiSource = '';
-          let debugLog: string[] = [];
-
-          // Try Bossu Data Hub first if enabled
-          if (isBossuDataEnabled) {
-            try {
-              let bossuNetwork = 'mtn';
-              if (network === 'Telecel') bossuNetwork = 'telecel';
-              else if (network === 'AirtelTigo') bossuNetwork = 'at';
-
-              console.log(`Manual Approval: Attempting BossuDataHub fulfillment for ${order.order_ref}: ${packageGb}GB on network ${bossuNetwork}`);
-              const bossuRes = await createBossuOrder({
-                network: bossuNetwork,
-                package_key: `${packageGb}gb`,
-                recipient_phone: order.phone_number,
-                external_reference: `${order.order_ref}_${Date.now()}`
-              });
-
-              if (bossuRes.status === 'success' || bossuRes.order_id) {
-                updates.order_status = 'processing';
-                updates.api_order_id = String(bossuRes.order_id || bossuRes.transaction_id);
-                apiSource = 'bossudata';
-                fulfilled = true;
-                console.log(`Manual Approval: BossuDataHub successful for ${order.order_ref}`);
-              }
-            } catch (err: any) {
-              const errorMsg = err.message || JSON.stringify(err);
-              debugLog.push(`Bossu: ${errorMsg}`);
-              console.error(`Manual Approval: BossuDataHub failed for ${order.order_ref}:`, err);
-            }
-          }
-
-          // Try MyZtaData next if enabled
-          if (!fulfilled && isMyZtaDataEnabled) {
-            try {
-              // Map network string to MyZtaData network_id
-              let myZtaNetworkId = 3; // MTN
-              if (network === 'Telecel') myZtaNetworkId = 2;
-              else if (network === 'AirtelTigo') myZtaNetworkId = 1;
-
-              const sharedBundle = packageGb * 1000;
-              console.log(`Manual Approval: Attempting MyZtaData fulfillment for ${order.order_ref}: ${packageGb}GB (${sharedBundle}MB) on network ID ${myZtaNetworkId}`);
-              
-              const myZtaRes = await buyOtherPackage(order.phone_number, myZtaNetworkId, sharedBundle, `${order.order_ref}_${Date.now()}`);
-              
-              if (myZtaRes.success) {
-                updates.order_status = 'processing';
-                updates.api_order_id = String(myZtaRes.transaction_code);
-                apiSource = 'myztadata';
-                fulfilled = true;
-                console.log(`Manual Approval: MyZtaData successful for ${order.order_ref}`);
-              }
-            } catch (err: any) {
-              const errorMsg = err.message || JSON.stringify(err);
-              debugLog.push(`MyZtaData: ${errorMsg}`);
-              console.error(`Manual Approval: MyZtaData failed for ${order.order_ref}:`, err);
-            }
-          }
-
-          // Fallback to GetUs
-          if (!fulfilled && isGetUsEnabled) {
-            try {
-              console.log(`Manual Approval: Attempting GetUs fulfillment for ${order.order_ref}: ${packageGb}GB on network: ${network}`);
-              const getusRes = await placeDataOrder(network, packageGb, order.phone_number);
-              
-              if (getusRes.status === 'success') {
-                updates.order_status = 'processing';
-                updates.api_order_id = String(getusRes.order_id);
-                apiSource = 'getus';
-                fulfilled = true;
-                console.log(`Manual Approval: GetUs successful for ${order.order_ref}`);
-              }
-            } catch (err: any) {
-              const errorMsg = err.message || JSON.stringify(err);
-              debugLog.push(`GetUs: ${errorMsg}`);
-              console.error(`Manual Approval: GetUs failed for ${order.order_ref}:`, err);
-            }
-          }
-
-          if (fulfilled) {
-            updates.notification_message = `Manual Approval: Fulfilled via ${apiSource}. API ID: ${updates.api_order_id}. ${debugLog.length > 0 ? '(Skipped: ' + debugLog.join(', ') + ')' : ''}`;
-          } else {
-            updates.notification_message = `Failed to Auto-Fulfill! Errors: ${debugLog.join(' | ')}`;
-          }
-        }
-      } catch (err) {
-        console.error('Manual approval: Auto-fulfillment failed overall:', err);
-      }
+    const fulfillment = await autoFulfillOrder(order, true);
+    if (fulfillment.fulfilled) {
+      updates.order_status = 'processing';
+      updates.api_order_id = fulfillment.apiOrderId;
     }
+    updates.notification_message = fulfillment.notificationMessage;
 
 
     // 4. Update Database

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { supabase } from '../services/supabase';
 import { generateUniqueOrderRef } from '../utils/orderRef';
 import { checkOrderStatus } from '../services/getusApi';
+import { verifyTransaction } from '../services/paystack';
+import { autoFulfillOrder } from '../services/fulfillment';
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -52,6 +54,7 @@ export const createOrder = async (req: Request, res: Response) => {
 export const getOrderStatus = async (req: Request, res: Response) => {
   try {
     const { orderRef } = req.params;
+    const { paystack_ref } = req.query;
 
     const { data, error } = await supabase
       .from('orders')
@@ -62,11 +65,14 @@ export const getOrderStatus = async (req: Request, res: Response) => {
         created_at,
         phone_number,
         amount_paid,
+        payment_method,
+        payment_status,
         order_status,
         api_order_id,
         notification_message,
         data_plans (
-          size_label
+          size_label,
+          size_gb
         )
       `)
       .eq('order_ref', orderRef)
@@ -74,6 +80,61 @@ export const getOrderStatus = async (req: Request, res: Response) => {
 
     if (error || !data) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Lazy Paystack Verification: If paystack_ref query param is present and payment is not paid
+    if (paystack_ref && data.payment_status !== 'paid') {
+      try {
+        console.log(`[Order Status] Lazy verifying Paystack payment for ${orderRef} via ref ${paystack_ref}`);
+        const verification = await verifyTransaction(paystack_ref as string);
+        
+        if (verification.status === true && verification.data.status === 'success') {
+          console.log(`[Order Status] Paystack transaction verified. Confirming order ${orderRef} payment.`);
+          
+          let updates: any = {
+            payment_status: 'paid',
+            payment_method: 'paystack'
+          };
+
+          // Trigger auto-fulfillment
+          const fulfillment = await autoFulfillOrder(data, false);
+          if (fulfillment.fulfilled) {
+            updates.order_status = 'processing';
+            updates.api_order_id = fulfillment.apiOrderId;
+          }
+          updates.notification_message = fulfillment.notificationMessage;
+
+          // Update database and retrieve the updated values
+          const { data: updatedOrder, error: updateError } = await supabase
+            .from('orders')
+            .update(updates)
+            .eq('id', data.id)
+            .select(`
+              id,
+              order_ref,
+              full_name,
+              created_at,
+              phone_number,
+              amount_paid,
+              payment_method,
+              payment_status,
+              order_status,
+              api_order_id,
+              notification_message,
+              data_plans (
+                size_label,
+                size_gb
+              )
+            `)
+            .single();
+
+          if (!updateError && updatedOrder) {
+            Object.assign(data, updatedOrder);
+          }
+        }
+      } catch (verifyErr) {
+        console.error('Lazy Paystack verification failed:', verifyErr);
+      }
     }
 
     // Lazy Polling: If it's processing and has a GetUs order ID, check its real-time status
