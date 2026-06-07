@@ -10,7 +10,7 @@ import {
   LayoutDashboard, ShoppingBag, Settings as SettingsIcon,
   Plus, RefreshCw, Edit3, Trash2, Megaphone, Hash, ShieldCheck,
   LogOut, MessageSquare, X, TrendingUp, Clock, CheckCircle2, PackagePlus,
-  AlertTriangle, Server, CreditCard, Smartphone, Check, ChevronDown
+  AlertTriangle, Server, CreditCard, Smartphone, Check, ChevronDown, Search
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -95,6 +95,7 @@ const AdminDashboard = () => {
   const [confirmDeletePlan, setConfirmDeletePlan] = useState<string | null>(null);
   const [confirmDeleteOrder, setConfirmDeleteOrder] = useState<string | null>(null);
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -424,8 +425,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Manual Order Button & Filters */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[1.5rem] border border-surface-highest/50 shadow-sm">
-              <div className="flex p-1 bg-surface-container/50 rounded-xl w-full sm:w-auto">
+            <div className="flex flex-col lg:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[1.5rem] border border-surface-highest/50 shadow-sm">
+              <div className="flex p-1 bg-surface-container/50 rounded-xl w-full lg:w-auto shrink-0">
                 {['all', 'unpaid', 'paid'].map((f) => (
                   <button
                     key={f}
@@ -441,27 +442,55 @@ const AdminDashboard = () => {
                   </button>
                 ))}
               </div>
-              <Button size="sm" onClick={() => setOrderModal(true)} className="w-full sm:w-auto rounded-xl shadow-lg hover:shadow-navy/20">
+
+              <div className="relative flex-1 w-full max-w-full lg:max-w-md">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant/50" />
+                <input
+                  type="text"
+                  placeholder="Search by name, phone, or order ref..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white/80 border border-surface-highest rounded-xl pl-11 pr-4 py-2.5 text-sm font-bold text-navy focus:outline-none focus:border-navy focus:ring-1 focus:ring-navy transition-all shadow-sm"
+                />
+              </div>
+
+              <Button size="sm" onClick={() => setOrderModal(true)} className="w-full lg:w-auto rounded-xl shadow-lg hover:shadow-navy/20 shrink-0">
                 <PackagePlus className="w-4 h-4" /> Manual Order
               </Button>
             </div>
 
             <div className="space-y-4">
               {orders.filter(o => {
-                if (filterPaymentStatus === 'all') return true;
-                return o.payment_status === filterPaymentStatus;
+                if (filterPaymentStatus !== 'all' && o.payment_status !== filterPaymentStatus) return false;
+                if (searchTerm) {
+                  const term = searchTerm.toLowerCase();
+                  return (
+                    o.full_name?.toLowerCase().includes(term) ||
+                    o.phone_number?.includes(term) ||
+                    o.order_ref?.toLowerCase().includes(term)
+                  );
+                }
+                return true;
               }).length === 0 && !isLoading && (
                   <div className="py-20 text-center space-y-4 bg-white/50 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-surface-highest">
                     <div className="w-16 h-16 bg-surface-container rounded-full flex items-center justify-center mx-auto opacity-50">
-                      <ShoppingBag className="w-8 h-8 text-navy" />
+                      <Search className="w-8 h-8 text-navy" />
                     </div>
-                    <p className="text-on-surface-variant font-black text-xl">No {filterPaymentStatus !== 'all' ? filterPaymentStatus : ''} orders found</p>
+                    <p className="text-on-surface-variant font-black text-xl">No orders found matching your criteria</p>
                   </div>
                 )}
               {orders
                 .filter(o => {
-                  if (filterPaymentStatus === 'all') return true;
-                  return o.payment_status === filterPaymentStatus;
+                  if (filterPaymentStatus !== 'all' && o.payment_status !== filterPaymentStatus) return false;
+                  if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    return (
+                      o.full_name?.toLowerCase().includes(term) ||
+                      o.phone_number?.includes(term) ||
+                      o.order_ref?.toLowerCase().includes(term)
+                    );
+                  }
+                  return true;
                 })
                 .map((order) => (
                   <motion.div

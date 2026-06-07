@@ -14,9 +14,16 @@ export const getAllOrders = async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    // Return all orders — the admin dashboard UI handles status display via badges.
-    // Filtering here would hide Paystack orders if the webhook is delayed or fails.
-    res.json(data);
+    // Filter out abandoned paystack orders
+    // Only show paystack orders if they are fully paid
+    const filteredData = data?.filter((order: any) => {
+      if (order.payment_method === 'paystack' && order.payment_status !== 'paid') {
+        return false;
+      }
+      return true;
+    });
+
+    res.json(filteredData);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
