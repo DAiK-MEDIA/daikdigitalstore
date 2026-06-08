@@ -10,7 +10,7 @@ import {
   LayoutDashboard, ShoppingBag, Settings as SettingsIcon,
   Plus, RefreshCw, Edit3, Trash2, Megaphone, Hash, ShieldCheck,
   LogOut, MessageSquare, X, TrendingUp, Clock, CheckCircle2, PackagePlus,
-  AlertTriangle, Server, CreditCard, Smartphone, Check, ChevronDown, Search
+  AlertTriangle, Server, CreditCard, Smartphone, Check, ChevronDown, Search, Lock
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ const AdminDashboard = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [settings, setSettings] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [newAdminPassword, setNewAdminPassword] = useState('');
 
   // Modals
   const [planModal, setPlanModal] = useState<null | 'add' | Plan>(null);
@@ -285,9 +286,19 @@ const AdminDashboard = () => {
     try {
       const headers = await getAuthHeader();
       await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/settings`, settings, { headers });
+      
+      if (newAdminPassword) {
+        const { error: pwdError } = await supabase.auth.updateUser({ password: newAdminPassword });
+        if (pwdError) throw pwdError;
+        setNewAdminPassword('');
+      }
+
       showToast('Settings saved!');
       fetchData();
-    } catch { showToast('Failed to save settings'); }
+    } catch (err: any) {
+      console.error('Error saving settings:', err);
+      showToast(err.response?.data?.error || err.message || 'Failed to save settings');
+    }
     finally { setSettingsSaving(false); }
   };
 
@@ -797,6 +808,21 @@ const AdminDashboard = () => {
                   <ShieldCheck className="w-4 h-4 text-secondary" /> Agent Access
                 </h3>
                 <Input label="Agent Login Password" type="password" placeholder="Set a new password" onChange={(e) => setSettings({ ...settings, agent_password_hash: e.target.value })} />
+                <p className="text-xs text-on-surface-variant">Leave blank to keep current password.</p>
+              </div>
+
+              {/* Admin Access */}
+              <div className="space-y-4 pt-6 border-t border-surface-highest">
+                <h3 className="font-bold text-navy flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-navy" /> Admin Access
+                </h3>
+                <Input 
+                  label="Change Admin Password" 
+                  type="password" 
+                  placeholder="Set a new admin password" 
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)} 
+                />
                 <p className="text-xs text-on-surface-variant">Leave blank to keep current password.</p>
               </div>
 
