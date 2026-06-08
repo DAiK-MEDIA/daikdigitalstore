@@ -28,17 +28,8 @@ export const syncAdminFromEnv = async () => {
 
     if (error) {
       if (error.message.toLowerCase().includes('already') || error.message.toLowerCase().includes('registered')) {
-        // User exists, sync password
-        const { data: listData } = await supabase.auth.admin.listUsers();
-        const user = listData?.users.find(u => u.email?.toLowerCase() === adminEmail.toLowerCase());
-        
-        if (user) {
-          await supabase.auth.admin.updateUserById(user.id, {
-            password: adminPassword,
-            email_confirm: true
-          });
-          console.log(`✅ Admin synced: ${adminEmail}`);
-        }
+        // User exists, do not overwrite the password to preserve changes made via the admin dashboard
+        console.log(`ℹ️ Admin user already exists: ${adminEmail} (skipping password sync to prevent overwriting)`);
       } else {
         console.error('❌ Admin sync error:', error.message);
       }
